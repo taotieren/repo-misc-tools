@@ -1,0 +1,9 @@
+[Unit]
+Description=Run Local Repository Cleanup Daily
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
