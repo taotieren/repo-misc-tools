@@ -7,3 +7,5 @@ Type=oneshot
 ExecStart=/usr/bin/cleanup-repo-tool
 User=root
 Group=root
+StandardOutput=append:/var/log/cleanup-repo/cleanup.log
+StandardError=append:/var/log/cleanup-repo/cleanup.log

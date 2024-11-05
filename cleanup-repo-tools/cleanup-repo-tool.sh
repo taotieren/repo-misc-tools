@@ -3,6 +3,18 @@
 # 仓库路径
 REPO_PATH="/home/lilac/pkgs/aur-repo"
 
+# 日志路径
+LOG_PATH="/var/log/cleanup-repo/cleanup.log"
+
+# 禁用回收站功能（如果适用）
+export XDG_CONFIG_HOME=/dev/null
+
+# 将日志输出重定向到日志文件
+exec > >(tee -a "$LOG_PATH") 2>&1
+
+# 记录开始时间
+echo "Cleanup started at $(date)" >>"$LOG_PATH"
+
 # 保留的版本数量
 KEEP_VERSIONS=2
 
@@ -36,3 +48,6 @@ done
 # 更新数据库
 #repo-add "$REPO_PATH/db/x86_64/packages.db.tar.gz" "$REPO_PATH/x86_64"/*
 #repo-add "$REPO_PATH/db/any/packages.db.tar.gz" "$REPO_PATH/any"/*
+
+# 记录结束时间
+echo "Cleanup finished at $(date)" >>"$LOG_PATH"
