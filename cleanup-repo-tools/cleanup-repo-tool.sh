@@ -4,7 +4,7 @@
 REPO_PATH="/home/lilac/pkgs/aur-repo"
 
 # 日志路径
-LOG_PATH="/var/log/cleanup-repo/cleanup.log"
+LOG_PATH="/var/log/cleanup-repo-tool/cleanup.log"
 
 # 禁用回收站功能（如果适用）
 export XDG_CONFIG_HOME=/dev/null
