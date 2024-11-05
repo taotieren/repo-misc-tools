@@ -23,11 +23,11 @@ for ARCH in x86_64 any riscv64 aarch64; do
     ARCH_DIR="$REPO_PATH/$ARCH"
 
     # 获取所有包名
-    PACKAGES=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name"*.pkg.tar.zst" -printf "%f\n" | cut -d'-' -f1-2 | sort | uniq)
+    PACKAGES=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "*.pkg.tar.zst" -printf "%f\n" | cut -d'-' -f1-2 | sort | uniq)
 
     for PACKAGE in $PACKAGES; do
         # 获取包的所有版本
-        VERSIONS=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "$PACKAGE-*.pkg.tar.zst" -printf "%f\n" | sort -rV)
+        VERSIONS=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "$PACKAGE-*.pkg.tar.zst" -printf "%f\n" | sort -V)
 
         # 保留最新的两个版本
         COUNT=0
