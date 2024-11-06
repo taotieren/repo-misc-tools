@@ -65,7 +65,7 @@ for ARCH in x86_64 any riscv64 aarch64; do
     ARCH_DIR="$REPO_PATH/$ARCH"
 
     # 获取所有包名
-    PACKAGES=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "*.pkg.tar.zst" -printf "%f\n" | cut -d'-' -f1-2 | sort | uniq)
+    PACKAGES=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "*.pkg.tar.zst" -printf "%f\n" | cut -d'-' -f1 | sort | uniq)
 
     # 用于存储已处理的包前缀
     PROCESSED_PREFIXES=()
