@@ -71,10 +71,10 @@ for ARCH in x86_64 any riscv64 aarch64; do
 
     for PACKAGE in $PACKAGES; do
         # 提取包名的主名称和子版本
-        IFS='-' read -r MAIN_NAME SUB_VERSION <<<"$PACKAGE"
+        IFS='-' read -r MAIN_NAME <<<"$PACKAGE"
 
         # 生成包前缀
-        PACKAGE_PREFIX="${MAIN_NAME}-${SUB_VERSION}"
+        PACKAGE_PREFIX="${MAIN_NAME}"
 
         # 检查是否已经处理过该前缀
         if [[ " ${PROCESSED_PREFIXES[*]} " =~ " ${PACKAGE_PREFIX} " ]]; then
