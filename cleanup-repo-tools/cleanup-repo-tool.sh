@@ -38,7 +38,7 @@ handle_package_versions() {
     local KEEP_VERSIONS=$3
 
     # 获取包的所有版本
-    VERSIONS=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "$PACKAGE_PREFIX-*.pkg.tar.zst" -printf "%f\n" | awk -F'-' '{print $2}' | sort -V)
+    VERSIONS=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "${PACKAGE_PREFIX}-*-*.pkg.tar.zst" -printf "%f\n" | awk -F'-' '{print $2 "-" $3}' | sort -V)
 
     # 检查版本数量是否足够
     VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
@@ -47,25 +47,25 @@ handle_package_versions() {
         return
     fi
 
-    # 保留指定数量的版本
-    COUNT=0
+    # 保留最新的 KEEP_VERSIONS 个版本
+    local KEEP_COUNT=0
     for VERSION in $VERSIONS; do
-        if ((COUNT < KEEP_VERSIONS)); then
-            # 保留最新的 KEEP_VERSIONS 个版本
-            COUNT=$((COUNT + 1))
-        else
-            # 删除旧版本及其签名文件
-            PKG_FILES=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "$PACKAGE_PREFIX-$VERSION-*.pkg.tar.zst")
-            for PKG_FILE in $PKG_FILES; do
-                SIG_FILE="${PKG_FILE}.sig"
-                if [ "$DELETE" = true ]; then
-                    rm -f "$PKG_FILE" "$SIG_FILE"
-                    echo "Deleted: $PKG_FILE and $SIG_FILE"
-                else
-                    echo "To be deleted: $PKG_FILE and $SIG_FILE"
-                fi
-            done
+        if ((KEEP_COUNT < KEEP_VERSIONS)); then
+            KEEP_COUNT=$((KEEP_COUNT + 1))
+            continue
         fi
+
+        # 删除旧版本及其签名文件
+        PKG_FILES=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "${PACKAGE_PREFIX}-${VERSION%%-*}-*-${VERSION##*-}*.pkg.tar.zst")
+        for PKG_FILE in $PKG_FILES; do
+            SIG_FILE="${PKG_FILE}.sig"
+            if [ "$DELETE" = true ]; then
+                rm -f "$PKG_FILE" "$SIG_FILE"
+                echo "Deleted: $PKG_FILE and $SIG_FILE"
+            else
+                echo "To be deleted: $PKG_FILE and $SIG_FILE"
+            fi
+        done
     done
 }
 
