@@ -61,7 +61,7 @@ handle_package_versions() {
 }
 
 # 遍历所有架构目录
-for ARCH in x86_64 any riscv64 aarch64; do
+for ARCH in x86_64 any; do
     ARCH_DIR="$REPO_PATH/$ARCH"
 
     # 获取所有包名
