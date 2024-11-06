@@ -40,6 +40,13 @@ handle_package_versions() {
     # 获取包的所有版本
     VERSIONS=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "$PACKAGE_PREFIX-*.pkg.tar.zst" -printf "%f\n" | awk -F'-' '{print $2}' | sort -V)
 
+    # 检查版本数量是否足够
+    VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
+    if ((VERSION_COUNT <= KEEP_VERSIONS)); then
+        echo "Not enough versions of $PACKAGE_PREFIX to delete. Skipping."
+        return
+    fi
+
     # 保留指定数量的版本
     COUNT=0
     for VERSION in $VERSIONS; do
