@@ -70,9 +70,6 @@ for ARCH in x86_64 any riscv64 aarch64; do
     # 用于存储已处理的包前缀
     PROCESSED_PREFIXES=()
 
-    # 用于存储已处理的包前缀
-    PROCESSED_PREFIXES=()
-
     for PACKAGE in $PACKAGES; do
         # 生成包前缀
         PACKAGE_PREFIX="${PACKAGE}"
