@@ -43,18 +43,19 @@ handle_package_versions() {
     # 保留指定数量的版本
     COUNT=0
     for VERSION in $VERSIONS; do
-        if ((COUNT >= KEEP_VERSIONS)); then
+        if ((COUNT < KEEP_VERSIONS)); then
+            # 保留最新的 KEEP_VERSIONS 个版本
+            COUNT=$((COUNT + 1))
+        else
             # 删除旧版本及其签名文件
             PKG_FILE="$ARCH_DIR/$VERSION"
             SIG_FILE="${PKG_FILE}.sig"
             if [ "$DELETE" = true ]; then
-                rm -rf "$PKG_FILE" "$SIG_FILE"
+                rm -f "$PKG_FILE" "$SIG_FILE"
                 echo "Deleted: $PKG_FILE and $SIG_FILE"
             else
                 echo "To be deleted: $PKG_FILE and $SIG_FILE"
             fi
-        else
-            COUNT=$((COUNT + 1))
         fi
     done
 }
@@ -69,12 +70,12 @@ for ARCH in x86_64 any riscv64 aarch64; do
     # 用于存储已处理的包前缀
     PROCESSED_PREFIXES=()
 
-    for PACKAGE in $PACKAGES; do
-        # 提取包名的主名称和子版本
-        IFS='-' read -r MAIN_NAME <<<"$PACKAGE"
+    # 用于存储已处理的包前缀
+    PROCESSED_PREFIXES=()
 
+    for PACKAGE in $PACKAGES; do
         # 生成包前缀
-        PACKAGE_PREFIX="${MAIN_NAME}"
+        PACKAGE_PREFIX="${PACKAGE}"
 
         # 检查是否已经处理过该前缀
         if [[ " ${PROCESSED_PREFIXES[*]} " =~ " ${PACKAGE_PREFIX} " ]]; then
