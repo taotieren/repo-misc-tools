@@ -99,6 +99,7 @@ for ARCH in aarch64 any riscv64 x86_64; do
 done
 
 # 更新数据库
+# 使用 archrepo 服务进行数据库更新
 # if [ "$DELETE" = true ]; then
 #     /usr/bin/repo-add "$REPO_PATH/db/x86_64/packages.db.tar.gz" "$REPO_PATH/x86_64"/*
 #     /usr/bin/repo-add "$REPO_PATH/db/any/packages.db.tar.gz" "$REPO_PATH/any"/*
