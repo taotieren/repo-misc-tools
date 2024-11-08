@@ -39,35 +39,56 @@ handle_package_versions() {
 
     # 获取包的所有版本
     VERSIONS=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "${PACKAGE_PREFIX}*.pkg.tar.zst" -printf "%f\n" |
-        sed -E 's/^(.*?)-([^-]+-[^-]+)-(.*)$/\2/' | sort -V)
-
-    # 检查版本数量是否足够
-    VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
-    if ((VERSION_COUNT <= KEEP_VERSIONS)); then
-        echo "Not enough versions of $PACKAGE_PREFIX to delete. Skipping."
-        return
-    fi
+        sed -E 's/^.*-([0-9]+)\..*$/\1/' | sort -V)
 
     # 保留最新的 KEEP_VERSIONS 个版本
-    local KEEP_COUNT=0
-    for VERSION in $VERSIONS; do
-        if ((KEEP_COUNT < KEEP_VERSIONS)); then
-            KEEP_COUNT=$((KEEP_COUNT + 1))
-            continue
-        fi
+    local VERSION_COUNT=${#VERSIONS[@]}
+    if ((VERSION_COUNT > KEEP_VERSIONS)); then
+        OLDEST_VERSION=${VERSIONS[0]}
+        DELETE_VERSIONS=("${VERSIONS[@]:0:$((VERSION_COUNT - KEEP_VERSIONS))}")
 
-        # 删除旧版本及其签名文件
-        PKG_FILES=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "${PACKAGE_PREFIX}-${VERSION%%-*}-*-${VERSION##*-}.pkg.tar.zst")
-        for PKG_FILE in $PKG_FILES; do
-            SIG_FILE="${PKG_FILE}.sig"
-            if [ "$DELETE" = true ]; then
-                rm -f "$PKG_FILE" "$SIG_FILE"
-                echo "Deleted: $PKG_FILE and $SIG_FILE"
-            else
-                echo "To be deleted: $PKG_FILE and $SIG_FILE"
-            fi
+        for DELETE_VERSION in "${DELETE_VERSIONS[@]}"; do
+            PKG_FILES=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "${PACKAGE_PREFIX}-${DELETE_VERSION}.*.pkg.tar.zst")
+            for PKG_FILE in $PKG_FILES; do
+                SIG_FILE="${PKG_FILE}.sig"
+                if [ "$DELETE" = true ]; then
+                    rm -f "$PKG_FILE" "$SIG_FILE"
+                    echo "Deleted: $PKG_FILE and $SIG_FILE"
+                else
+                    echo "To be deleted: $PKG_FILE and $SIG_FILE"
+                fi
+            done
         done
-    done
+    else
+        echo "Not enough versions of $PACKAGE_PREFIX to delete. Skipping."
+    fi
+    #     # 检查版本数量是否足够
+    #     VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
+    #     if ((VERSION_COUNT <= KEEP_VERSIONS)); then
+    #         echo "Not enough versions of $PACKAGE_PREFIX to delete. Skipping."
+    #         return
+    #     fi
+
+    # 保留最新的 KEEP_VERSIONS 个版本
+    #     local KEEP_COUNT=0
+    #     for VERSION in $VERSIONS; do
+    #         if ((KEEP_COUNT < KEEP_VERSIONS)); then
+    #             KEEP_COUNT=$((KEEP_COUNT + 1))
+    #             continue
+    #         fi
+    #
+    #         # 删除旧版本及其签名文件
+    #         PKG_FILES=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "${PACKAGE_PREFIX}-${VERSION%%-*}-*-${VERSION##*-}.pkg.tar.zst")
+    #         for PKG_FILE in $PKG_FILES; do
+    #             SIG_FILE="${PKG_FILE}.sig"
+    #             if [ "$DELETE" = true ]; then
+    #                 rm -f "$PKG_FILE" "$SIG_FILE"
+    #                 echo "Deleted: $PKG_FILE and $SIG_FILE"
+    #             else
+    #                 echo "To be deleted: $PKG_FILE and $SIG_FILE"
+    #             fi
+    #         done
+    #     done
 }
 
 # 遍历所有架构目录
@@ -101,8 +122,11 @@ done
 # 更新数据库
 # 使用 archrepo 服务进行数据库更新
 # if [ "$DELETE" = true ]; then
-#     /usr/bin/repo-add "$REPO_PATH/db/x86_64/packages.db.tar.gz" "$REPO_PATH/x86_64"/*
-#     /usr/bin/repo-add "$REPO_PATH/db/any/packages.db.tar.gz" "$REPO_PATH/any"/*
+#     for ARCH in aarch64 any riscv64 x86_64; do
+#         ARCH_DIR="$REPO_PATH/$ARCH"
+#         DB_FILE="$REPO_PATH/db/$ARCH/packages.db.tar.gz"
+#         repo-add "$DB_FILE" "$ARCH_DIR"/*.pkg.tar.zst
+#     done
 # fi
 
 # 记录结束时间
