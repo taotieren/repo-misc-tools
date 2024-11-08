@@ -38,7 +38,13 @@ handle_package_versions() {
     local KEEP_VERSIONS=$3
 
     # 获取包的所有版本
-    VERSIONS=$(ls -1 "$ARCH_DIR/$PACKAGE_NAME"-*.pkg.tar.zst | sort -V)
+    VERSIONS=$(ls -1 "$ARCH_DIR/$PACKAGE_NAME"-*.pkg.tar.zst 2>/dev/null | sort -V)
+
+    # 检查是否存在版本
+    if [ -z "$VERSIONS" ]; then
+        echo "Not enough versions of $PACKAGE_NAME to delete. Skipping."
+        return
+    fi
 
     # 保留最新的 KEEP_VERSIONS 个版本
     VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
@@ -48,15 +54,15 @@ handle_package_versions() {
         for DELETE_VERSION in $DELETE_VERSIONS; do
             if [ "$DELETE" = true ]; then
                 rm -f "$DELETE_VERSION"
-                echo "Deleted: $DELETE_VERSION"
+                rm -f "${DELETE_VERSION%.pkg.tar.zst}.sig"
+                echo "Deleted: $DELETE_VERSION and ${DELETE_VERSION%.pkg.tar.zst}.sig"
             else
-                echo "To be deleted: $DELETE_VERSION"
+                echo "To be deleted: $DELETE_VERSION and ${DELETE_VERSION%.pkg.tar.zst}.sig"
             fi
         done
     else
         echo "Not enough versions of $PACKAGE_NAME to delete. Skipping."
     fi
-
 }
 
 # 遍历所有架构目录
