@@ -33,49 +33,49 @@ fi
 
 # 处理包版本的函数
 handle_package_versions() {
-    local PACKAGE_PREFIX=$1
-    local ARCH_DIR=$2
-    local KEEP_VERSIONS=$3
+    local ARCH_DIR=$1
+    local KEEP_VERSIONS=$2
 
-    # 获取包的所有版本
-    VERSIONS=$(ls -1 "$ARCH_DIR/$PACKAGE_NAME"-*.pkg.tar.zst 2>/dev/null | sort -V)
+    # 遍历所有包
+    for PACKAGE_FILE in "$ARCH_DIR"/*.pkg.tar.zst; do
+        PACKAGE_NAME=$(basename "$PACKAGE_FILE" .pkg.tar.zst)
 
-    # 检查是否存在版本
-    if [ -z "$VERSIONS" ]; then
-        echo "Not enough versions of $PACKAGE_NAME to delete. Skipping."
-        return
-    fi
+        # 获取包的所有版本
+        VERSIONS=$(ls -1 "$ARCH_DIR/$PACKAGE_NAME"-*.pkg.tar.zst 2>/dev/null | sort -V)
 
-    # 保留最新的 KEEP_VERSIONS 个版本
-    VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
-    if ((VERSION_COUNT > KEEP_VERSIONS)); then
-        DELETE_VERSIONS=$(echo "$VERSIONS" | head -n -$KEEP_VERSIONS)
+        # 检查是否存在版本
+        if [ -z "$VERSIONS" ]; then
+            echo "Not enough versions of $PACKAGE_NAME to delete. Skipping."
+            continue
+        fi
 
-        for DELETE_VERSION in $DELETE_VERSIONS; do
-            if [ "$DELETE" = true ]; then
-                rm -f "$DELETE_VERSION"
-                rm -f "${DELETE_VERSION%.pkg.tar.zst}.sig"
-                echo "Deleted: $DELETE_VERSION and ${DELETE_VERSION%.pkg.tar.zst}.sig"
-            else
-                echo "To be deleted: $DELETE_VERSION and ${DELETE_VERSION%.pkg.tar.zst}.sig"
-            fi
-        done
-    else
-        echo "Not enough versions of $PACKAGE_NAME to delete. Skipping."
-    fi
+        # 保留最新的 KEEP_VERSIONS 个版本
+        VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
+        if ((VERSION_COUNT > KEEP_VERSIONS)); then
+            DELETE_VERSIONS=$(echo "$VERSIONS" | head -n -$KEEP_VERSIONS)
+
+            for DELETE_VERSION in $DELETE_VERSIONS; do
+                if [ "$DELETE" = true ]; then
+                    rm -f "$DELETE_VERSION"
+                    rm -f "${DELETE_VERSION%.pkg.tar.zst}.sig"
+                    echo "Deleted: $DELETE_VERSION and ${DELETE_VERSION%.pkg.tar.zst}.sig"
+                else
+                    echo "To be deleted: $DELETE_VERSION and ${DELETE_VERSION%.pkg.tar.zst}.sig"
+                fi
+            done
+        else
+            echo "Not enough versions of $PACKAGE_NAME to delete. Skipping."
+        fi
+    done
 }
 
 # 遍历所有架构目录
 for ARCH in aarch64 any riscv64 x86_64; do
     ARCH_DIR="$REPO_PATH/$ARCH"
 
-    # 获取所有包名
-    PACKAGES=$(ls -1 "$ARCH_DIR" | grep -o '^[^.]*' | sort | uniq)
+    # 处理该架构目录下的包
+    handle_package_versions "$ARCH_DIR" "$KEEP_VERSIONS"
 
-    for PACKAGE in $PACKAGES; do
-        # 处理该包的版本
-        handle_package_versions "$PACKAGE" "$ARCH_DIR" "$KEEP_VERSIONS"
-    done
 done
 
 # 更新数据库
