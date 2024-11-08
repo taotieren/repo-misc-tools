@@ -38,57 +38,25 @@ handle_package_versions() {
     local KEEP_VERSIONS=$3
 
     # 获取包的所有版本
-    VERSIONS=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "${PACKAGE_PREFIX}*.pkg.tar.zst" -printf "%f\n" |
-        sed -E 's/^.*-([0-9]+)\..*$/\1/' | sort -V)
+    VERSIONS=$(ls -1 "$ARCH_DIR/$PACKAGE_NAME"-*.pkg.tar.zst | sort -V)
 
     # 保留最新的 KEEP_VERSIONS 个版本
-    local VERSION_COUNT=${#VERSIONS[@]}
+    VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
     if ((VERSION_COUNT > KEEP_VERSIONS)); then
-        OLDEST_VERSION=${VERSIONS[0]}
-        DELETE_VERSIONS=("${VERSIONS[@]:0:$((VERSION_COUNT - KEEP_VERSIONS))}")
+        DELETE_VERSIONS=$(echo "$VERSIONS" | head -n -$KEEP_VERSIONS)
 
-        for DELETE_VERSION in "${DELETE_VERSIONS[@]}"; do
-            PKG_FILES=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "${PACKAGE_PREFIX}-${DELETE_VERSION}.*.pkg.tar.zst")
-            for PKG_FILE in $PKG_FILES; do
-                SIG_FILE="${PKG_FILE}.sig"
-                if [ "$DELETE" = true ]; then
-                    rm -f "$PKG_FILE" "$SIG_FILE"
-                    echo "Deleted: $PKG_FILE and $SIG_FILE"
-                else
-                    echo "To be deleted: $PKG_FILE and $SIG_FILE"
-                fi
-            done
+        for DELETE_VERSION in $DELETE_VERSIONS; do
+            if [ "$DELETE" = true ]; then
+                rm -f "$DELETE_VERSION"
+                echo "Deleted: $DELETE_VERSION"
+            else
+                echo "To be deleted: $DELETE_VERSION"
+            fi
         done
     else
-        echo "Not enough versions of $PACKAGE_PREFIX to delete. Skipping."
+        echo "Not enough versions of $PACKAGE_NAME to delete. Skipping."
     fi
-    #     # 检查版本数量是否足够
-    #     VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
-    #     if ((VERSION_COUNT <= KEEP_VERSIONS)); then
-    #         echo "Not enough versions of $PACKAGE_PREFIX to delete. Skipping."
-    #         return
-    #     fi
 
-    # 保留最新的 KEEP_VERSIONS 个版本
-    #     local KEEP_COUNT=0
-    #     for VERSION in $VERSIONS; do
-    #         if ((KEEP_COUNT < KEEP_VERSIONS)); then
-    #             KEEP_COUNT=$((KEEP_COUNT + 1))
-    #             continue
-    #         fi
-    #
-    #         # 删除旧版本及其签名文件
-    #         PKG_FILES=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "${PACKAGE_PREFIX}-${VERSION%%-*}-*-${VERSION##*-}.pkg.tar.zst")
-    #         for PKG_FILE in $PKG_FILES; do
-    #             SIG_FILE="${PKG_FILE}.sig"
-    #             if [ "$DELETE" = true ]; then
-    #                 rm -f "$PKG_FILE" "$SIG_FILE"
-    #                 echo "Deleted: $PKG_FILE and $SIG_FILE"
-    #             else
-    #                 echo "To be deleted: $PKG_FILE and $SIG_FILE"
-    #             fi
-    #         done
-    #     done
 }
 
 # 遍历所有架构目录
@@ -96,26 +64,11 @@ for ARCH in aarch64 any riscv64 x86_64; do
     ARCH_DIR="$REPO_PATH/$ARCH"
 
     # 获取所有包名
-    PACKAGES=$(find "$ARCH_DIR" -mindepth 1 -maxdepth 1 -type f -name "*.pkg.tar.zst" -printf "%f\n" |
-        sed -E 's/^(.*?)-[0-9].*/\1/' | sort | uniq)
-
-    # 用于存储已处理的包前缀
-    PROCESSED_PREFIXES=()
+    PACKAGES=$(ls -1 "$ARCH_DIR" | grep -o '^[^.]*' | sort | uniq)
 
     for PACKAGE in $PACKAGES; do
-        # 生成包前缀
-        PACKAGE_PREFIX="${PACKAGE}"
-
-        # 检查是否已经处理过该前缀
-        if [[ " ${PROCESSED_PREFIXES[*]} " =~ " ${PACKAGE_PREFIX} " ]]; then
-            continue
-        fi
-
-        # 添加到已处理的前缀列表
-        PROCESSED_PREFIXES+=("$PACKAGE_PREFIX")
-
-        # 处理该包前缀
-        handle_package_versions "$PACKAGE_PREFIX" "$ARCH_DIR" "$KEEP_VERSIONS"
+        # 处理该包的版本
+        handle_package_versions "$PACKAGE" "$ARCH_DIR" "$KEEP_VERSIONS"
     done
 done
 
