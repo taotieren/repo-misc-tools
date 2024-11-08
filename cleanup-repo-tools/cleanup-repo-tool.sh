@@ -68,7 +68,6 @@ handle_package_versions() {
         fi
     done
 }
-
 # 遍历所有架构目录
 for ARCH in aarch64 any riscv64 x86_64; do
     ARCH_DIR="$REPO_PATH/$ARCH"
