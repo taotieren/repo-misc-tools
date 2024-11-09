@@ -4,7 +4,7 @@ import shutil
 import sys
 import datetime
 
-REPO_PATH = "/home/lilac/pkgs/aur-repo"
+REPO_PATH = "/home/taotieren/git_clone/github.com/repo-misc-tools/cleanup-repo-tools"
 KEEP_VERSIONS = 2
 LOG_PATH = "/var/log/cleanup-repo-tool/cleanup.log"
 DELETE = "-d" in sys.argv
@@ -27,7 +27,11 @@ with open(LOG_PATH, "a") as log_file:
                 [f for f in os.listdir(arch_dir) if f.startswith(package_name + "-")]
             )
 
-            versions = sorted(versions, key=lambda x: (x[1], int(x[2])), reverse=True)
+            versions = sorted(
+                versions,
+                key=lambda x: (x[1], int(x[2]) if x[2].isdigit() else 0),
+                reverse=True,
+            )
 
             if len(versions) > KEEP_VERSIONS:
                 for delete_version in versions[KEEP_VERSIONS:]:
