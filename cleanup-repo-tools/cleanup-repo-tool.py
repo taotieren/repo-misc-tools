@@ -28,8 +28,14 @@ with open(LOG_PATH, "a") as log_file:
     # 自定义版本比较函数
     def compare_versions(v1, v2):
         # 提取版本信息和编译版本
-        v1_info, v1_build = v1.split("-")[-2], v1.split("-")[-1]
-        v2_info, v2_build = v2.split("-")[-2], v2.split("-")[-1]
+        v1_parts = v1.split("-")
+        v2_parts = v2.split("-")
+
+        v1_info = v1_parts[-2]
+        v1_build = v1_parts[-1].replace(".pkg.tar.zst", "")
+
+        v2_info = v2_parts[-2]
+        v2_build = v2_parts[-1].replace(".pkg.tar.zst", "")
 
         # 比较版本信息
         info_cmp = version.parse(v1_info).compare(version.parse(v2_info))
@@ -57,13 +63,7 @@ with open(LOG_PATH, "a") as log_file:
             ]
 
             # 根据自定义版本比较函数进行排序
-            versions.sort(
-                key=lambda x: (
-                    version.parse(x.split("-")[-2]),
-                    version.parse(x.split("-")[-1]),
-                ),
-                reverse=True,
-            )
+            versions.sort(key=compare_versions, reverse=True)
 
             # 如果版本数量大于保留的版本数量，删除多余的版本
             if len(versions) > KEEP_VERSIONS:
