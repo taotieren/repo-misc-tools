@@ -56,6 +56,9 @@ with open(LOG_PATH, "a") as log_file:
                             log_file.write(
                                 f"To be deleted: {delete_version} and {delete_version}.sig\n"
                             )
+                            sig_file = os.path.join(arch_dir, delete_version + ".sig")
+                            if os.path.exists(sig_file):
+                                log_file.write(f"To be deleted: {sig_file}\n")
             else:
                 log_file.write(
                     f"Not enough versions of {package_name} to delete. Skipping.\n"
