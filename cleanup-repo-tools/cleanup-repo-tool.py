@@ -34,19 +34,13 @@ with open(LOG_PATH, "a") as log_file:
             if not package_file.endswith(".pkg.tar.zst"):
                 continue
 
-            package_name, version_info, build_version, architecture = re.match(
-                r"^(.+)-([^-]+)-(\d+)-([^.]+)\.pkg.tar.zst", package_file
-            ).groups()
+            package_name, version_info, build_version, architecture = re.match(r"^(.+)-([^-]+)-(\d+)-([^.]+)\.pkg.tar.zst", package_file).groups()
 
             versions = sorted(
                 [f for f in os.listdir(arch_dir) if f.startswith(package_name + "-")]
             )
 
-            versions = sorted(
-                versions,
-                key=lambda x: (x.split("-")[-2], int(x.split("-")[-1].split(".")[0])),
-                reverse=True,
-            )
+            versions = sorted(versions, key=lambda x: (x.split("-")[-2], int(re.search(r'\d+', x.split("-")[-1]).group() if re.search(r'\d+', x.split("-")[-1]) else 0), reverse=True)
 
             versions_to_keep = versions[:KEEP_VERSIONS]
 
