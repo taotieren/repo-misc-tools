@@ -44,21 +44,21 @@ with open(LOG_PATH, "a") as log_file:
 
             versions = sorted(
                 versions,
-                key=lambda x: (x[1], int(x[2]) if x[2].isdigit() else 0),
+                key=lambda x: (x.split("-")[-2], int(x.split("-")[-1].split(".")[0])),
                 reverse=True,
             )
 
-            if len(versions) > KEEP_VERSIONS:
-                for delete_version in versions[KEEP_VERSIONS:]:
-                    if os.path.exists(os.path.join(arch_dir, delete_version)):
-                        if DELETE:
-                            os.remove(os.path.join(arch_dir, delete_version))
-                            log_file.write(f"Deleted: {delete_version}\n")
-                        else:
-                            log_file.write(f"To be deleted: {delete_version}\n")
-            else:
-                log_file.write(
-                    f"Not enough versions of {package_name} to delete. Skipping.\n"
-                )
+            versions_to_keep = versions[:KEEP_VERSIONS]
+
+            for delete_version in versions[KEEP_VERSIONS:]:
+                if os.path.exists(os.path.join(arch_dir, delete_version)):
+                    if DELETE:
+                        os.remove(os.path.join(arch_dir, delete_version))
+                        sig_file = os.path.join(arch_dir, delete_version + ".sig")
+                        if os.path.exists(sig_file):
+                            os.remove(sig_file)
+                        log_file.write(f"Deleted: {delete_version}\n")
+                    else:
+                        log_file.write(f"To be deleted: {delete_version}\n")
 
     log_file.write("Cleanup completed.\n")
