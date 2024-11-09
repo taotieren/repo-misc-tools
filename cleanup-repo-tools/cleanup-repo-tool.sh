@@ -41,7 +41,7 @@ handle_package_versions() {
         PACKAGE_NAME=$(basename "$PACKAGE_FILE" .pkg.tar.zst)
 
         # 获取包的所有版本
-        VERSIONS=$(ls -1 "$ARCH_DIR/$PACKAGE_NAME"-*.pkg.tar.zst 2>/dev/null | sort -V)
+        VERSIONS=$(ls -1 "$ARCH_DIR/$PACKAGE_NAME"-*-[0-9]*-*.pkg.tar.zst 2>/dev/null | sort -V)
 
         # 检查是否存在版本
         if [ -z "$VERSIONS" ]; then
@@ -57,10 +57,10 @@ handle_package_versions() {
             for DELETE_VERSION in $DELETE_VERSIONS; do
                 if [ "$DELETE" = true ]; then
                     rm -f "$ARCH_DIR/$DELETE_VERSION"
-                    rm -f "$ARCH_DIR/${DELETE_VERSION%.pkg.tar.zst}.sig"
-                    echo "Deleted: $DELETE_VERSION and ${DELETE_VERSION%.pkg.tar.zst}.sig"
+                    rm -f "$ARCH_DIR/${DELETE_VERSION}.sig"
+                    echo "Deleted: $DELETE_VERSION and ${DELETE_VERSION}.sig"
                 else
-                    echo "To be deleted: $DELETE_VERSION and ${DELETE_VERSION%.pkg.tar.zst}.sig"
+                    echo "To be deleted: $DELETE_VERSION and ${DELETE_VERSION}.sig"
                 fi
             done
         else
