@@ -19,7 +19,6 @@ if not os.path.exists(log_dir):
 
 # 判断是否执行删除操作
 DELETE = "-d" in sys.argv
-sigs_to_delete = []
 
 with open(LOG_PATH, "a") as log_file:
     log_file.write(f"Cleanup started at {datetime.datetime.now()}\n")
@@ -54,28 +53,12 @@ with open(LOG_PATH, "a") as log_file:
                     if os.path.exists(os.path.join(arch_dir, delete_version)):
                         if DELETE:
                             os.remove(os.path.join(arch_dir, delete_version))
-                            sig_file = os.path.join(arch_dir, delete_version + ".sig")
-                            if os.path.exists(sig_file):
-                                sigs_to_delete.append(sig_file)
-                                log_file.write(
-                                    f"Deleted: {delete_version} and added {delete_version}.sig to deletion list\n"
-                                )
-                            else:
-                                log_file.write(
-                                    f"Signature file not found for {delete_version}\n"
-                                )
+                            log_file.write(f"Deleted: {delete_version}\n")
                         else:
-                            log_file.write(
-                                f"To be deleted: {delete_version} and {delete_version}.sig\n"
-                            )
+                            log_file.write(f"To be deleted: {delete_version}\n")
             else:
                 log_file.write(
                     f"Not enough versions of {package_name} to delete. Skipping.\n"
                 )
-
-    for sig_file in sigs_to_delete:
-        if os.path.exists(sig_file):
-            os.remove(sig_file)
-            log_file.write(f"Deleted: {sig_file}\n")
 
     log_file.write("Cleanup completed.\n")
