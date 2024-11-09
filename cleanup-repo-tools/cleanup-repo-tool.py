@@ -46,8 +46,10 @@ with open(LOG_PATH, "a") as log_file:
                 continue
 
             # 提取包名、版本信息和编译次数
+            # 更灵活的正则表达式，处理包含 git 和 r 版本号的情况
             match = re.match(
-                r"^(.+?)-([\d\.-]+)-(\d+)-(.+?)\.pkg\.tar\.zst$", package_file
+                r"^(.+?)-(([\d\.-]+)(-r\d+)?(-git)?(-debug)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
+                package_file,
             )
             if not match:
                 log_file.write(
@@ -55,7 +57,16 @@ with open(LOG_PATH, "a") as log_file:
                 )
                 continue
 
-            package_name, version_info, build_number, architecture = match.groups()
+            (
+                package_name,
+                full_version,
+                version_info,
+                _,
+                _,
+                _,
+                build_number,
+                architecture,
+            ) = match.groups()
 
             # 获取该包的所有版本
             versions = [
@@ -74,13 +85,14 @@ with open(LOG_PATH, "a") as log_file:
             # 根据版本信息和编译次数进行排序
             def version_key(filename):
                 match = re.match(
-                    r"^(.+?)-([\d\.-]+)-(\d+)-(.+?)\.pkg\.tar\.zst$", filename
+                    r"^(.+?)-(([\d\.-]+)(-r\d+)?(-git)?(-debug)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
+                    filename,
                 )
                 if not match:
                     raise ValueError(
                         f"Unable to parse version information from filename: {filename}"
                     )
-                _, version_info, build_number, _ = match.groups()
+                _, full_version, version_info, _, _, _, build_number, _ = match.groups()
                 return (parse_version(version_info), int(build_number))
 
             try:
@@ -95,10 +107,13 @@ with open(LOG_PATH, "a") as log_file:
             build_count = 0
 
             for v in versions:
-                match = re.match(r"^(.+?)-([\d\.-]+)-(\d+)-(.+?)\.pkg\.tar\.zst$", v)
+                match = re.match(
+                    r"^(.+?)-(([\d\.-]+)(-r\d+)?(-git)?(-debug)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
+                    v,
+                )
                 if not match:
                     continue
-                _, version_info, build_number, _ = match.groups()
+                _, full_version, version_info, _, _, _, build_number, _ = match.groups()
 
                 if version_info != current_version:
                     current_version = version_info
