@@ -38,9 +38,11 @@ for arch in ["aarch64", "any", "riscv64", "x86_64"]:
                         )
                         if os.path.exists(sig_file):
                             os.remove(sig_file)
-                        print(
-                            f"Deleted: {delete_version} and {delete_version.replace('.pkg.tar.zst', '.sig')}"
-                        )
+                            print(
+                                f"Deleted: {delete_version} and {delete_version.replace('.pkg.tar.zst', '.sig')}"
+                            )
+                        else:
+                            print(f"Signature file not found for {delete_version}")
                     else:
                         print(
                             f"To be deleted: {delete_version} and {delete_version.replace('.pkg.tar.zst', '.sig')}"
