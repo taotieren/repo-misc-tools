@@ -4,7 +4,7 @@ import shutil
 import sys
 import datetime
 
-REPO_PATH = "/home/taotieren/git_clone/github.com/repo-misc-tools/cleanup-repo-tools"
+REPO_PATH = "/home/lilac/pkgs/aur-repo"
 KEEP_VERSIONS = 2
 LOG_PATH = "/var/log/cleanup-repo-tool/cleanup.log"
 DELETE = "-d" in sys.argv
@@ -15,12 +15,16 @@ with open(LOG_PATH, "a") as log_file:
     for arch in ["aarch64", "any", "riscv64", "x86_64"]:
         arch_dir = os.path.join(REPO_PATH, arch)
 
+        if not os.path.exists(arch_dir):
+            log_file.write(f"Directory {arch_dir} does not exist. Skipping.\n")
+            continue
+
         for package_file in os.listdir(arch_dir):
             if not package_file.endswith(".pkg.tar.zst"):
                 continue
 
             package_name, version_info, build_version, architecture = re.match(
-                r"^(.+)-([^-]+)-(\d+)-([^.]+)\.pkg\.tar\.zst", package_file
+                r"^(.+)-([^-]+)-(\d+)-([^.]+)\.pkg.tar.zst", package_file
             ).groups()
 
             versions = sorted(
