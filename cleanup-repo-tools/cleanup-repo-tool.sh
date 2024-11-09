@@ -56,8 +56,8 @@ handle_package_versions() {
 
             for DELETE_VERSION in $DELETE_VERSIONS; do
                 if [ "$DELETE" = true ]; then
-                    rm -f "$DELETE_VERSION"
-                    rm -f "${DELETE_VERSION%.pkg.tar.zst}.sig"
+                    rm -f "$ARCH_DIR/$DELETE_VERSION"
+                    rm -f "$ARCH_DIR/${DELETE_VERSION%.pkg.tar.zst}.sig"
                     echo "Deleted: $DELETE_VERSION and ${DELETE_VERSION%.pkg.tar.zst}.sig"
                 else
                     echo "To be deleted: $DELETE_VERSION and ${DELETE_VERSION%.pkg.tar.zst}.sig"
