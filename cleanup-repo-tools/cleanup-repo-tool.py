@@ -47,7 +47,7 @@ with open(LOG_PATH, "a") as log_file:
 
             # 提取包名、版本信息和编译次数
             match = re.match(
-                r"^(.+?)-([^-]+-[^-]+)-(\d+)-(.+?)\.pkg\.tar\.zst$", package_file
+                r"^(.+?)-([\d\.-]+)-(\d+)-(.+?)\.pkg\.tar\.zst$", package_file
             )
             if not match:
                 log_file.write(
@@ -74,7 +74,7 @@ with open(LOG_PATH, "a") as log_file:
             # 根据版本信息和编译次数进行排序
             def version_key(filename):
                 match = re.match(
-                    r"^(.+?)-([^-]+-[^-]+)-(\d+)-(.+?)\.pkg\.tar\.zst$", filename
+                    r"^(.+?)-([\d\.-]+)-(\d+)-(.+?)\.pkg\.tar\.zst$", filename
                 )
                 if not match:
                     raise ValueError(
@@ -83,7 +83,11 @@ with open(LOG_PATH, "a") as log_file:
                 _, version_info, build_number, _ = match.groups()
                 return (parse_version(version_info), int(build_number))
 
-            versions.sort(key=version_key, reverse=True)
+            try:
+                versions.sort(key=version_key, reverse=True)
+            except ValueError as e:
+                log_file.write(f"Error sorting versions for {package_name}: {e}\n")
+                continue
 
             # 保留最新的两个版本或最新的两个编译次数
             versions_to_keep = []
@@ -91,7 +95,7 @@ with open(LOG_PATH, "a") as log_file:
             build_count = 0
 
             for v in versions:
-                match = re.match(r"^(.+?)-([^-]+-[^-]+)-(\d+)-(.+?)\.pkg\.tar\.zst$", v)
+                match = re.match(r"^(.+?)-([\d\.-]+)-(\d+)-(.+?)\.pkg\.tar\.zst$", v)
                 if not match:
                     continue
                 _, version_info, build_number, _ = match.groups()
