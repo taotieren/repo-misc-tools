@@ -38,21 +38,40 @@ with open(LOG_PATH, "a") as log_file:
                 continue
 
             # 提取包名、版本信息和编译次数
-            match = re.match(r"^(.+?)-([^-]+-[^-]+)-(\d+)-(.+?)\.pkg\.tar\.zst$", package_file)
+            match = re.match(
+                r"^(.+?)-([^-]+-[^-]+)-(\d+)-(.+?)\.pkg\.tar\.zst$", package_file
+            )
             if not match:
-                log_file.write(f"Unable to parse version information from filename: {package_file}\n")
+                log_file.write(
+                    f"Unable to parse version information from filename: {package_file}\n"
+                )
                 continue
 
             package_name, version_info, build_number, architecture = match.groups()
 
             # 获取该包的所有版本
-            versions = [f for f in os.listdir(arch_dir) if f.startswith(package_name + "-") and f.endswith(".pkg.tar.zst")]
+            versions = [
+                f
+                for f in os.listdir(arch_dir)
+                if f.startswith(package_name + "-") and f.endswith(".pkg.tar.zst")
+            ]
+
+            # 如果版本数量少于两个，则保留所有版本
+            if len(versions) < KEEP_VERSIONS:
+                log_file.write(
+                    f"Less than {KEEP_VERSIONS} versions of {package_name} found. Skipping.\n"
+                )
+                continue
 
             # 根据版本信息和编译次数进行排序
             def version_key(filename):
-                match = re.match(r"^(.+?)-([^-]+-[^-]+)-(\d+)-(.+?)\.pkg\.tar\.zst$", filename)
+                match = re.match(
+                    r"^(.+?)-([^-]+-[^-]+)-(\d+)-(.+?)\.pkg\.tar\.zst$", filename
+                )
                 if not match:
-                    raise ValueError(f"Unable to parse version information from filename: {filename}")
+                    raise ValueError(
+                        f"Unable to parse version information from filename: {filename}"
+                    )
                 _, version_info, build_number, _ = match.groups()
                 return (version.parse(version_info), int(build_number))
 
@@ -61,7 +80,7 @@ with open(LOG_PATH, "a") as log_file:
             # 保留最新的两个版本或最新的两个编译次数
             versions_to_keep = []
             current_version = None
-            build_count = ½
+            build_count = 0
 
             for v in versions:
                 match = re.match(r"^(.+?)-([^-]+-[^-]+)-(\d+)-(.+?)\.pkg\.tar\.zst$", v)
@@ -86,12 +105,16 @@ with open(LOG_PATH, "a") as log_file:
                         sig_file = delete_path + ".sig"
                         if os.path.exists(sig_file):
                             os.remove(sig_file)
-                            log_file.write(f"Deleted: {delete_version} and {delete_version}.sig\n")
+                            log_file.write(
+                                f"Deleted: {delete_version} and {delete_version}.sig\n"
+                            )
                         else:
                             log_file.write(f"Deleted: {delete_version}\n")
                     else:
                         log_file.write(f"To be deleted: {delete_version}\n")
             else:
-                log_file.write(f"Not enough versions of {package_name} to delete. Skipping.\n")
+                log_file.write(
+                    f"Not enough versions of {package_name} to delete. Skipping.\n"
+                )
 
     log_file.write(f"Cleanup completed at {datetime.datetime.now()}\n")
