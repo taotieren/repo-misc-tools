@@ -2,7 +2,6 @@ import os
 import re
 import sys
 import datetime
-from packaging import version
 
 # 仓库路径
 REPO_PATH = "/home/lilac/pkgs/aur-repo"
@@ -19,6 +18,13 @@ if not os.path.exists(log_dir):
     os.makedirs(log_dir)
     os.system(f"chown root:root {log_dir}")
     os.system(f"chmod 755 {log_dir}")
+
+
+# 自定义版本解析函数
+def parse_version(version_str):
+    parts = version_str.split(".")
+    return tuple(int(part) if part.isdigit() else part for part in parts)
+
 
 # 打开日志文件以追加模式写入
 with open(LOG_PATH, "a") as log_file:
@@ -73,7 +79,7 @@ with open(LOG_PATH, "a") as log_file:
                         f"Unable to parse version information from filename: {filename}"
                     )
                 _, version_info, build_number, _ = match.groups()
-                return (version.parse(version_info), int(build_number))
+                return (parse_version(version_info), int(build_number))
 
             versions.sort(key=version_key, reverse=True)
 
