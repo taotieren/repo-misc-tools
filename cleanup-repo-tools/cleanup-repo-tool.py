@@ -46,9 +46,9 @@ with open(LOG_PATH, "a") as log_file:
                 continue
 
             # 提取包名、版本信息和编译次数
-            # 更强大的正则表达式，处理包含 git、r、g 等标识符的情况
+            # 更灵活的正则表达式，处理包含 git、r、g 等标识符的情况
             match = re.match(
-                r"^(.+?)-(([\d\.-]+)(-r\d+)?(-g[0-9a-f]+)?(-git)?(-debug)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
+                r"^(.+?)-(([\d\.-]+)(-r\d+)?(-g[0-9a-f]+)?(-git)?(-debug)?(:\d+\.\d+\.\d+)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
                 package_file,
             )
             if not match:
@@ -65,6 +65,7 @@ with open(LOG_PATH, "a") as log_file:
                 _,
                 _,
                 _,
+                extra_version,
                 build_number,
                 architecture,
             ) = match.groups()
@@ -86,17 +87,29 @@ with open(LOG_PATH, "a") as log_file:
             # 根据版本信息和编译次数进行排序
             def version_key(filename):
                 match = re.match(
-                    r"^(.+?)-(([\d\.-]+)(-r\d+)?(-g[0-9a-f]+)?(-git)?(-debug)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
+                    r"^(.+?)-(([\d\.-]+)(-r\d+)?(-g[0-9a-f]+)?(-git)?(-debug)?(:\d+\.\d+\.\d+)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
                     filename,
                 )
                 if not match:
                     raise ValueError(
                         f"Unable to parse version information from filename: {filename}"
                     )
-                _, full_version, version_info, _, _, _, _, build_number, _ = (
-                    match.groups()
+                (
+                    _,
+                    full_version,
+                    version_info,
+                    _,
+                    _,
+                    _,
+                    _,
+                    extra_version,
+                    build_number,
+                    _,
+                ) = match.groups()
+                return (
+                    parse_version(version_info + (extra_version or "")),
+                    int(build_number),
                 )
-                return (parse_version(version_info), int(build_number))
 
             try:
                 versions.sort(key=version_key, reverse=True)
@@ -107,22 +120,31 @@ with open(LOG_PATH, "a") as log_file:
             # 保留最新的两个版本或最新的两个编译次数
             versions_to_keep = []
             current_version = None
-            build_count = 0  # 修正这里的初始化
+            build_count = 0
 
             for v in versions:
                 match = re.match(
-                    r"^(.+?)-(([\d\.-]+)(-r\d+)?(-g[0-9a-f]+)?(-git)?(-debug)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
+                    r"^(.+?)-(([\d\.-]+)(-r\d+)?(-g[0-9a-f]+)?(-git)?(-debug)?(:\d+\.\d+\.\d+)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
                     v,
                 )
                 if not match:
                     continue
-                _, full_version, version_info, _, _, _, _, build_number, _ = (
-                    match.groups()
-                )
+                (
+                    _,
+                    full_version,
+                    version_info,
+                    _,
+                    _,
+                    _,
+                    _,
+                    extra_version,
+                    build_number,
+                    _,
+                ) = match.groups()
 
-                if version_info != current_version:
-                    current_version = version_info
-                    build_count = 0  # 每次遇到新版本时重置计数器
+                if version_info + (extra_version or "") != current_version:
+                    current_version = version_info + (extra_version or "")
+                    build_count = 0
 
                 if build_count < KEEP_VERSIONS:
                     versions_to_keep.append(v)
