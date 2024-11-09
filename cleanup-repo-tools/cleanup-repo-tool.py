@@ -25,25 +25,12 @@ DELETE = "-d" in sys.argv
 with open(LOG_PATH, "a") as log_file:
     log_file.write(f"Cleanup started at {datetime.datetime.now()}\n")
 
-    # 自定义版本比较函数
-    def compare_versions(v1, v2):
-        # 提取版本信息和编译版本
-        v1_parts = v1.split("-")
-        v2_parts = v2.split("-")
-
-        v1_info = v1_parts[-2]
-        v1_build = v1_parts[-1].replace(".pkg.tar.zst", "")
-
-        v2_info = v2_parts[-2]
-        v2_build = v2_parts[-1].replace(".pkg.tar.zst", "")
-
-        # 比较版本信息
-        info_cmp = version.parse(v1_info).compare(version.parse(v2_info))
-        if info_cmp != 0:
-            return info_cmp
-
-        # 版本信息相同，比较编译版本
-        return version.parse(v1_build).compare(version.parse(v2_build))
+    # 提取版本信息和编译版本
+    def extract_version_info(filename):
+        parts = filename.split("-")
+        version_info = parts[-2]
+        build_version = parts[-1].replace(".pkg.tar.zst", "")
+        return (version.parse(version_info), version.parse(build_version))
 
     # 遍历所有架构目录
     for arch in ["aarch64", "any", "riscv64", "x86_64"]:
@@ -62,8 +49,8 @@ with open(LOG_PATH, "a") as log_file:
                 f for f in os.listdir(arch_dir) if f.startswith(package_name + "-")
             ]
 
-            # 根据自定义版本比较函数进行排序
-            versions.sort(key=compare_versions, reverse=True)
+            # 根据提取的版本信息进行排序
+            versions.sort(key=extract_version_info, reverse=True)
 
             # 如果版本数量大于保留的版本数量，删除多余的版本
             if len(versions) > KEEP_VERSIONS:
