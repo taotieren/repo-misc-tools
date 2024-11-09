@@ -33,19 +33,15 @@ for arch in ["aarch64", "any", "riscv64", "x86_64"]:
                 if os.path.exists(os.path.join(arch_dir, delete_version)):
                     if DELETE:
                         os.remove(os.path.join(arch_dir, delete_version))
-                        sig_file = os.path.join(
-                            arch_dir, delete_version.replace(".pkg.tar.zst", ".sig")
-                        )
+                        sig_file = os.path.join(arch_dir, delete_version + ".sig")
                         if os.path.exists(sig_file):
                             os.remove(sig_file)
-                            print(
-                                f"Deleted: {delete_version} and {delete_version.replace('.pkg.tar.zst', '.sig')}"
-                            )
+                            print(f"Deleted: {delete_version} and {delete_version}.sig")
                         else:
                             print(f"Signature file not found for {delete_version}")
                     else:
                         print(
-                            f"To be deleted: {delete_version} and {delete_version.replace('.pkg.tar.zst', '.sig')}"
+                            f"To be deleted: {delete_version} and {delete_version}.sig"
                         )
         else:
             print(f"Not enough versions of {package_name} to delete. Skipping.")
