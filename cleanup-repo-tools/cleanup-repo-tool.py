@@ -22,8 +22,10 @@ if not os.path.exists(log_dir):
 
 # 自定义版本解析函数
 def parse_version(version_str):
-    parts = version_str.split(".")
-    return tuple(int(part) if part.isdigit() else part for part in parts)
+    # 将版本号拆分成数字和非数字部分
+    parts = re.split(r"(\d+)", version_str)
+    # 将数字部分转换为整数，非数字部分保持为字符串
+    return tuple(int(part) if part.isdigit() else part for part in parts if part)
 
 
 # 打开日志文件以追加模式写入
