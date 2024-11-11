@@ -29,21 +29,27 @@ def parse_version(version_str):
 
 
 # 从文件名中提取包信息
-def extract_package_info(filename):
-    # 更宽松的正则表达式来匹配包名和版本信息
-    match = re.match(
+def parse_package_filename(filename):
+    patterns = [
         r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?)(?::([\d\.-]+))?)?-(\d+)-(.+?)\.pkg\.tar\.zst$",
-        filename,
-    )
-    if not match:
-        raise ValueError(
-            f"Unable to parse version information from filename: {filename}"
-        )
+        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))(?::([\d\.-]+))?-([\d]+)-(.+?)\.pkg\.tar\.zst$",
+        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))(?::([\d\.-]+))?-(\d+)-(.+?)\.pkg\.tar\.zst$",
+        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))(?::([\d\.-]+))?-([\d]+)-(.+?)\.pkg\.tar\.zst$",
+        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))(?::([\d\.-]+))?-(\d+)-(.+?)\.pkg\.tar\.zst$",
+    ]
 
-    package_name, version, extra_version, build_number, architecture = match.groups()
-    full_version = f"{version}{':' if extra_version else ''}{extra_version or ''}"
+    for pattern in patterns:
+        match = re.match(pattern, filename)
+        if match:
+            package_name, version, extra_version, build_number, architecture = (
+                match.groups()
+            )
+            full_version = (
+                f"{version}{':' if extra_version else ''}{extra_version or ''}"
+            )
+            return (package_name, full_version, build_number, architecture)
 
-    return (package_name, full_version, build_number, architecture)
+    raise ValueError(f"Unable to parse version information from filename: {filename}")
 
 
 # 打开日志文件以追加模式写入
@@ -66,7 +72,7 @@ with open(LOG_PATH, "a") as log_file:
         for package_file in all_files:
             try:
                 (package_name, full_version, build_number, architecture) = (
-                    extract_package_info(package_file)
+                    parse_package_filename(package_file)
                 )
                 key = (package_name, full_version)
                 if key not in packages:
