@@ -1,7 +1,8 @@
 import os
 import re
 import sys
-import datetime
+import shutil
+from datetime import datetime
 
 # 仓库路径
 REPO_PATH = "/home/lilac/pkgs/aur-repo"
@@ -15,9 +16,8 @@ DELETE = "-d" in sys.argv
 # 确保日志目录存在
 log_dir = os.path.dirname(LOG_PATH)
 if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-    os.system(f"chown root:root {log_dir}")
-    os.system(f"chmod 755 {log_dir}")
+    os.makedirs(log_dir, mode=0o755, exist_ok=True)
+    os.chown(log_dir, 0, 0)  # root:root ownership
 
 
 # 自定义版本解析函数
@@ -28,9 +28,22 @@ def parse_version(version_str):
     return tuple(int(part) if part.isdigit() else part for part in parts if part)
 
 
+# 从文件名中提取包信息
+def extract_package_info(filename):
+    match = re.match(
+        r"^(.+?)-(([\d\.-]+)(-r\d+)?(-g[0-9a-f]+)?(-git)?(-debug)?(:\d+\.\d+\.\d+)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
+        filename,
+    )
+    if not match:
+        raise ValueError(
+            f"Unable to parse version information from filename: {filename}"
+        )
+    return match.groups()
+
+
 # 打开日志文件以追加模式写入
 with open(LOG_PATH, "a") as log_file:
-    log_file.write(f"Cleanup started at {datetime.datetime.now()}\n")
+    log_file.write(f"Cleanup started at {datetime.now()}\n")
 
     # 遍历所有架构目录
     for arch in ["aarch64", "any", "riscv64", "x86_64"]:
@@ -40,135 +53,58 @@ with open(LOG_PATH, "a") as log_file:
             log_file.write(f"Directory {arch_dir} does not exist. Skipping.\n")
             continue
 
-        # 遍历该架构目录下的所有包
-        for package_file in os.listdir(arch_dir):
-            if not package_file.endswith(".pkg.tar.zst"):
-                continue
+        # 收集所有 .pkg.tar.zst 文件
+        all_files = [f for f in os.listdir(arch_dir) if f.endswith(".pkg.tar.zst")]
 
-            # 提取包名、版本信息和编译次数
-            # 更灵活的正则表达式，处理包含 git、r、g 等标识符的情况
-            match = re.match(
-                r"^(.+?)-(([\d\.-]+)(-r\d+)?(-g[0-9a-f]+)?(-git)?(-debug)?(:\d+\.\d+\.\d+)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
-                package_file,
-            )
-            if not match:
-                log_file.write(
-                    f"Unable to parse version information from filename: {package_file}\n"
-                )
-                continue
+        # 创建一个字典来存储每个包的版本
+        packages = {}
+        for package_file in all_files:
+            try:
+                (
+                    package_name,
+                    full_version,
+                    version_info,
+                    _,
+                    _,
+                    _,
+                    _,
+                    extra_version,
+                    build_number,
+                    _,
+                ) = extract_package_info(package_file)
+                key = (package_name, version_info + (extra_version or ""))
+                if key not in packages:
+                    packages[key] = []
+                packages[key].append((full_version, build_number, package_file))
+            except ValueError as e:
+                log_file.write(f"Error processing file {package_file}: {e}\n")
 
-            (
-                package_name,
-                full_version,
-                version_info,
-                _,
-                _,
-                _,
-                _,
-                extra_version,
-                build_number,
-                architecture,
-            ) = match.groups()
-
-            # 获取该包的所有版本
-            versions = [
-                f
-                for f in os.listdir(arch_dir)
-                if f.startswith(package_name + "-") and f.endswith(".pkg.tar.zst")
-            ]
-
-            # 如果版本数量少于两个，则保留所有版本
-            if len(versions) < KEEP_VERSIONS:
+        # 对每个包的版本进行排序并决定哪些版本需要保留
+        for (package_name, version), files in packages.items():
+            if len(files) < KEEP_VERSIONS:
                 log_file.write(
                     f"Less than {KEEP_VERSIONS} versions of {package_name} found. Skipping.\n"
                 )
                 continue
 
             # 根据版本信息和编译次数进行排序
-            def version_key(filename):
-                match = re.match(
-                    r"^(.+?)-(([\d\.-]+)(-r\d+)?(-g[0-9a-f]+)?(-git)?(-debug)?(:\d+\.\d+\.\d+)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
-                    filename,
-                )
-                if not match:
-                    raise ValueError(
-                        f"Unable to parse version information from filename: {filename}"
-                    )
-                (
-                    _,
-                    full_version,
-                    version_info,
-                    _,
-                    _,
-                    _,
-                    _,
-                    extra_version,
-                    build_number,
-                    _,
-                ) = match.groups()
-                return (
-                    parse_version(version_info + (extra_version or "")),
-                    int(build_number),
-                )
+            files.sort(key=lambda x: (parse_version(x[0]), int(x[1])), reverse=True)
 
-            try:
-                versions.sort(key=version_key, reverse=True)
-            except ValueError as e:
-                log_file.write(f"Error sorting versions for {package_name}: {e}\n")
-                continue
-
-            # 保留最新的两个版本或最新的两个编译次数
-            versions_to_keep = []
-            current_version = None
-            build_count = 0
-
-            for v in versions:
-                match = re.match(
-                    r"^(.+?)-(([\d\.-]+)(-r\d+)?(-g[0-9a-f]+)?(-git)?(-debug)?(:\d+\.\d+\.\d+)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
-                    v,
-                )
-                if not match:
-                    continue
-                (
-                    _,
-                    full_version,
-                    version_info,
-                    _,
-                    _,
-                    _,
-                    _,
-                    extra_version,
-                    build_number,
-                    _,
-                ) = match.groups()
-
-                if version_info + (extra_version or "") != current_version:
-                    current_version = version_info + (extra_version or "")
-                    build_count = 0
-
-                if build_count < KEEP_VERSIONS:
-                    versions_to_keep.append(v)
-                    build_count += 1
+            # 保留最新的两个版本
+            versions_to_keep = [f[2] for f in files[:KEEP_VERSIONS]]
 
             # 删除多余的版本
-            for delete_version in set(versions) - set(versions_to_keep):
-                delete_path = os.path.join(arch_dir, delete_version)
-                if os.path.exists(delete_path):
-                    if DELETE:
-                        os.remove(delete_path)
-                        sig_file = delete_path + ".sig"
-                        if os.path.exists(sig_file):
-                            os.remove(sig_file)
-                            log_file.write(
-                                f"Deleted: {delete_version} and {delete_version}.sig\n"
-                            )
-                        else:
-                            log_file.write(f"Deleted: {delete_version}\n")
+            for file in files[KEEP_VERSIONS:]:
+                delete_path = os.path.join(arch_dir, file)
+                if DELETE:
+                    os.remove(delete_path)
+                    sig_file = delete_path + ".sig"
+                    if os.path.exists(sig_file):
+                        os.remove(sig_file)
+                        log_file.write(f"Deleted: {file} and {file}.sig\n")
                     else:
-                        log_file.write(f"To be deleted: {delete_version}\n")
-            else:
-                log_file.write(
-                    f"Not enough versions of {package_name} to delete. Skipping.\n"
-                )
+                        log_file.write(f"Deleted: {file}\n")
+                else:
+                    log_file.write(f"To be deleted: {file}\n")
 
-    log_file.write(f"Cleanup completed at {datetime.datetime.now()}\n")
+    log_file.write(f"Cleanup completed at {datetime.now()}\n")
