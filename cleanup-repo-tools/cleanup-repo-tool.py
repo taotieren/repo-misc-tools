@@ -83,15 +83,13 @@ def main():
             all_files = [f for f in os.listdir(arch_dir) if f.endswith(".pkg.tar.zst")]
 
             # 创建一个字典来存储每个包的版本
-            packages = {}
+            packages = defaultdict(list)
             for package_file in all_files:
                 try:
                     (package_name, full_version, build_number, architecture) = (
                         parse_package_filename(package_file)
                     )
                     key = (package_name, full_version)
-                    if key not in packages:
-                        packages[key] = []
                     packages[key].append((full_version, build_number, package_file))
                 except ValueError as e:
                     log_file.write(f"Error processing file {package_file}: {e}\n")
@@ -111,7 +109,7 @@ def main():
                 versions_to_keep = [f[2] for f in files[:KEEP_VERSIONS]]  # 只保留文件名
 
                 # 删除多余的版本
-                for file_info in files[KEEP_VERSIONS:]:  # 使用 file_info 代替 file
+                for file_info in files[KEEP_VERSIONS:]:
                     file = file_info[2]  # 获取文件名
                     delete_path = os.path.join(arch_dir, file)
                     if DELETE:
