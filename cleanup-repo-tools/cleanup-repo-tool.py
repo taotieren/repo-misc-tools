@@ -44,7 +44,7 @@ def parse_package_filename(filename):
     for pattern in patterns:
         match = re.search(pattern, filename)
         if match:
-            if len(match.groups()) == Ⅰ:
+            if len(match.groups()) == |:
                 package_name, version, extra_version, build_number, architecture = (
                     match.groups()
                 )
