@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import shutil
+from collections import defaultdict
 from datetime import datetime
 
 # 仓库路径
@@ -30,6 +31,7 @@ def parse_version(version_str):
 
 # 从文件名中提取包信息
 def parse_package_filename(filename):
+    # 定义多种可能的正则表达式模式
     patterns = [
         r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?)(?::([\d\.-]+))?)?-(\d+)-(.+?)\.pkg\.tar\.zst$",
         r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))(?::([\d\.-]+))?-([\d]+)-(.+?)\.pkg\.tar\.zst$",
@@ -52,62 +54,112 @@ def parse_package_filename(filename):
     raise ValueError(f"Unable to parse version information from filename: {filename}")
 
 
-# 打开日志文件以追加模式写入
-with open(LOG_PATH, "a") as log_file:
-    log_file.write(f"Cleanup started at {datetime.now()}\n")
-
-    # 遍历所有架构目录
+# 收集所有包名
+def collect_package_names(repo_path):
+    package_names = set()
     for arch in ["aarch64", "any", "riscv64", "x86_64"]:
-        arch_dir = os.path.join(REPO_PATH, arch)
+        arch_dir = os.path.join(repo_path, arch)
+        if os.path.exists(arch_dir):
+            for filename in os.listdir(arch_dir):
+                if filename.endswith(".pkg.tar.zst"):
+                    try:
+                        (package_name, _, _, _) = parse_package_filename(filename)
+                        package_names.add(package_name)
+                    except ValueError:
+                        pass  # 如果无法解析，跳过
+    return package_names
 
-        if not os.path.exists(arch_dir):
-            log_file.write(f"Directory {arch_dir} does not exist. Skipping.\n")
-            continue
 
-        # 收集所有 .pkg.tar.zst 文件
-        all_files = [f for f in os.listdir(arch_dir) if f.endswith(".pkg.tar.zst")]
+# 动态生成正则表达式
+def generate_regex_from_package_names(package_names):
+    # 基于包名生成通用正则表达式
+    common_prefixes = defaultdict(int)
+    for name in package_names:
+        for i in range(len(name)):
+            prefix = name[:i]
+            common_prefixes[prefix] += 1
 
-        # 创建一个字典来存储每个包的版本
-        packages = {}
-        for package_file in all_files:
-            try:
-                (package_name, full_version, build_number, architecture) = (
-                    parse_package_filename(package_file)
-                )
-                key = (package_name, full_version)
-                if key not in packages:
-                    packages[key] = []
-                packages[key].append((full_version, build_number, package_file))
-            except ValueError as e:
-                log_file.write(f"Error processing file {package_file}: {e}\n")
+    # 找到最常见的前缀
+    most_common_prefix = max(common_prefixes, key=common_prefixes.get)
+    pattern = f"^{re.escape(most_common_prefix)}(.+?)-((?:(?:\\d+[\\._-])*(?:\\d+|alpha|beta|rc)[\\._-]*(?:r\\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\\.\\d+)?)?(?:-beta(?:\\.\\d+)?)?(?:-rc(?:\\.\\d+)?)?)(?::([\\d\\.-]+))?)?-(\\d+)-(.+?)\\.pkg\\.tar\\.zst$"
+    return pattern
 
-        # 对每个包的版本进行排序并决定哪些版本需要保留
-        for (package_name, version), files in packages.items():
-            if len(files) < KEEP_VERSIONS:
-                log_file.write(
-                    f"Less than {KEEP_VERSIONS} versions of {package_name} found. Skipping.\n"
-                )
+
+# 主逻辑
+def main():
+    # 收集包名
+    package_names = collect_package_names(REPO_PATH)
+
+    # 生成正则表达式
+    regex_pattern = generate_regex_from_package_names(package_names)
+    print(f"Generated regex pattern: {regex_pattern}")
+
+    # 添加生成的正则表达式到 patterns 列表
+    patterns = [
+        regex_pattern,
+        # 其他预定义的正则表达式
+    ]
+
+    # 打开日志文件以追加模式写入
+    with open(LOG_PATH, "a") as log_file:
+        log_file.write(f"Cleanup started at {datetime.now()}\n")
+
+        # 遍历所有架构目录
+        for arch in ["aarch64", "any", "riscv64", "x86_64"]:
+            arch_dir = os.path.join(REPO_PATH, arch)
+
+            if not os.path.exists(arch_dir):
+                log_file.write(f"Directory {arch_dir} does not exist. Skipping.\n")
                 continue
 
-            # 根据版本信息和编译次数进行排序
-            files.sort(key=lambda x: (parse_version(x[0]), int(x[1])), reverse=True)
+            # 收集所有 .pkg.tar.zst 文件
+            all_files = [f for f in os.listdir(arch_dir) if f.endswith(".pkg.tar.zst")]
 
-            # 保留最新的两个版本
-            versions_to_keep = [f[2] for f in files[:KEEP_VERSIONS]]  # 只保留文件名
+            # 创建一个字典来存储每个包的版本
+            packages = {}
+            for package_file in all_files:
+                try:
+                    (package_name, full_version, build_number, architecture) = (
+                        parse_package_filename(package_file)
+                    )
+                    key = (package_name, full_version)
+                    if key not in packages:
+                        packages[key] = []
+                    packages[key].append((full_version, build_number, package_file))
+                except ValueError as e:
+                    log_file.write(f"Error processing file {package_file}: {e}\n")
 
-            # 删除多余的版本
-            for file_info in files[KEEP_VERSIONS:]:  # 使用 file_info 代替 file
-                file = file_info[2]  # 获取文件名
-                delete_path = os.path.join(arch_dir, file)
-                if DELETE:
-                    os.remove(delete_path)
-                    sig_file = delete_path + ".sig"
-                    if os.path.exists(sig_file):
-                        os.remove(sig_file)
-                        log_file.write(f"Deleted: {file} and {file}.sig\n")
+            # 对每个包的版本进行排序并决定哪些版本需要保留
+            for (package_name, version), files in packages.items():
+                if len(files) < KEEP_VERSIONS:
+                    log_file.write(
+                        f"Less than {KEEP_VERSIONS} versions of {package_name} found. Skipping.\n"
+                    )
+                    continue
+
+                # 根据版本信息和编译次数进行排序
+                files.sort(key=lambda x: (parse_version(x[0]), int(x[1])), reverse=True)
+
+                # 保留最新的两个版本
+                versions_to_keep = [f[2] for f in files[:KEEP_VERSIONS]]  # 只保留文件名
+
+                # 删除多余的版本
+                for file_info in files[KEEP_VERSIONS:]:  # 使用 file_info 代替 file
+                    file = file_info[2]  # 获取文件名
+                    delete_path = os.path.join(arch_dir, file)
+                    if DELETE:
+                        os.remove(delete_path)
+                        sig_file = delete_path + ".sig"
+                        if os.path.exists(sig_file):
+                            os.remove(sig_file)
+                            log_file.write(f"Deleted: {file} and {file}.sig\n")
+                        else:
+                            log_file.write(f"Deleted: {file}\n")
                     else:
-                        log_file.write(f"Deleted: {file}\n")
-                else:
-                    log_file.write(f"To be deleted: {file}\n")
+                        log_file.write(f"To be deleted: {file}\n")
 
-    log_file.write(f"Cleanup completed at {datetime.now()}\n")
+        log_file.write(f"Cleanup completed at {datetime.now()}\n")
+
+
+if __name__ == "__main__":
+    main()
