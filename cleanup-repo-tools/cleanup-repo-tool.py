@@ -91,10 +91,11 @@ with open(LOG_PATH, "a") as log_file:
             files.sort(key=lambda x: (parse_version(x[0]), int(x[1])), reverse=True)
 
             # 保留最新的两个版本
-            versions_to_keep = [f[2] for f in files[:KEEP_VERSIONS]]
+            versions_to_keep = [f[2] for f in files[:KEEP_VERSIONS]]  # 只保留文件名
 
             # 删除多余的版本
-            for file in files[KEEP_VERSIONS:]:
+            for file_info in files[KEEP_VERSIONS:]:  # 使用 file_info 代替 file
+                file = file_info[2]  # 获取文件名
                 delete_path = os.path.join(arch_dir, file)
                 if DELETE:
                     os.remove(delete_path)
