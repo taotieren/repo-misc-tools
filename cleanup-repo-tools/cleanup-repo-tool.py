@@ -30,16 +30,20 @@ def parse_version(version_str):
 
 # 从文件名中提取包信息
 def extract_package_info(filename):
-    # 更新正则表达式以匹配更多版本格式
+    # 宽松的正则表达式来分割包名
     match = re.match(
-        r"^(.+?)-((?:[\d\.-]+|[\d\.-]+:[\d\.-]+)(-r\d+)?(-g[0-9a-f]+)?(-git)?(-debug)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
+        r"^(.+?)-([^:]+)(?::([^:]+))?-(\d+)-(.+?)\.pkg\.tar\.zst$",
         filename,
     )
     if not match:
         raise ValueError(
             f"Unable to parse version information from filename: {filename}"
         )
-    return match.groups()
+
+    package_name, version, extra_version, build_number, architecture = match.groups()
+    full_version = f"{version}{':' if extra_version else ''}{extra_version or ''}"
+
+    return (package_name, full_version, build_number, architecture)
 
 
 # 打开日志文件以追加模式写入
@@ -61,7 +65,7 @@ with open(LOG_PATH, "a") as log_file:
         packages = {}
         for package_file in all_files:
             try:
-                (package_name, full_version, *_, build_number, architecture) = (
+                (package_name, full_version, build_number, architecture) = (
                     extract_package_info(package_file)
                 )
                 key = (package_name, full_version)
