@@ -30,8 +30,9 @@ def parse_version(version_str):
 
 # 从文件名中提取包信息
 def extract_package_info(filename):
+    # 更新正则表达式以匹配更多版本格式
     match = re.match(
-        r"^(.+?)-(([\d\.-]+)(-r\d+)?(-g[0-9a-f]+)?(-git)?(-debug)?(:\d+\.\d+\.\d+)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
+        r"^(.+?)-((?:[\d\.-]+|[\d\.-]+:[\d\.-]+)(-r\d+)?(-g[0-9a-f]+)?(-git)?(-debug)?)-(\d+)-(.+?)\.pkg\.tar\.zst$",
         filename,
     )
     if not match:
@@ -60,19 +61,10 @@ with open(LOG_PATH, "a") as log_file:
         packages = {}
         for package_file in all_files:
             try:
-                (
-                    package_name,
-                    full_version,
-                    version_info,
-                    _,
-                    _,
-                    _,
-                    _,
-                    extra_version,
-                    build_number,
-                    _,
-                ) = extract_package_info(package_file)
-                key = (package_name, version_info + (extra_version or ""))
+                (package_name, full_version, *_, build_number, architecture) = (
+                    extract_package_info(package_file)
+                )
+                key = (package_name, full_version)
                 if key not in packages:
                     packages[key] = []
                 packages[key].append((full_version, build_number, package_file))
