@@ -31,42 +31,41 @@ def parse_version(version_str):
 
 # 从文件名中提取包信息
 def parse_package_filename(filename):
-    # 定义更通用的正则表达式模式
-    pattern = r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?)(?::([\d\.-]+))?)?-(\d+)-(.+?)\.pkg\.tar\.zst$"
+    # 定义正则表达式模式来匹配版本信息
+    patterns = [
+        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?)(?::([\d\.-]+))?)?-(\d+)-(.+?)\.pkg\.tar\.zst$",
+        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))(?::([\d\.-]+))?-([\d]+)-(.+?)\.pkg\.tar\.zst$",
+        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))(?::([\d\.-]+))?-(\d+)-(.+?)\.pkg\.tar\.zst$",
+        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))(?::([\d\.-]+))?-([\d]+)-(.+?)\.pkg\.tar\.zst$",
+        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))(?::([\d\.-]+))?-(\d+)-(.+?)\.pkg\.tar\.zst$",
+        r"-(\d+\.\d+\.\d+\.r\d+\.[a-f0-9]+-\d+|-r\d+\.[a-f0-9]+\-\d+|\d+\.\d+\.\d+\.r\d+\.[a-f0-9]+-\d+)",
+    ]
 
-    match = re.match(pattern, filename)
-    if match:
-        package_name, version, extra_version, build_number, architecture = (
-            match.groups()
-        )
-        full_version = f"{version}{':' if extra_version else ''}{extra_version or ''}"
-        return (package_name, full_version, build_number, architecture)
+    for pattern in patterns:
+        match = re.search(pattern, filename)
+        if match:
+            if len(match.groups()) == Ⅰ:
+                package_name, version, extra_version, build_number, architecture = (
+                    match.groups()
+                )
+                full_version = (
+                    f"{version}{':' if extra_version else ''}{extra_version or ''}"
+                )
+                return (package_name, full_version, build_number, architecture)
+            elif len(match.groups()) == 1:
+                # 这里处理只匹配到版本信息的情况
+                version_info = match.group(1)
+                # 假设包名是第一个连字符之前的部分
+                package_name = filename.split("-", 1)[0]
+                # 构建号和架构信息可能在文件名的末尾
+                build_number, architecture = filename.rsplit("-", 2)[-2:]
+                return (package_name, version_info, build_number, architecture)
 
     raise ValueError(f"Unable to parse version information from filename: {filename}")
 
 
-# 收集所有包名
-def collect_package_names(repo_path):
-    package_names = set()
-    for arch in ["aarch64", "any", "riscv64", "x86_64"]:
-        arch_dir = os.path.join(repo_path, arch)
-        if os.path.exists(arch_dir):
-            for filename in os.listdir(arch_dir):
-                if filename.endswith(".pkg.tar.zst"):
-                    try:
-                        (package_name, _, _, _) = parse_package_filename(filename)
-                        package_names.add(package_name)
-                    except ValueError as e:
-                        with open(LOG_PATH, "a") as log_file:
-                            log_file.write(f"Error parsing {filename}: {e}\n")
-    return package_names
-
-
 # 主逻辑
 def main():
-    # 收集包名
-    package_names = collect_package_names(REPO_PATH)
-
     # 打开日志文件以追加模式写入
     with open(LOG_PATH, "a") as log_file:
         log_file.write(f"Cleanup started at {datetime.now()}\n")
@@ -83,13 +82,15 @@ def main():
             all_files = [f for f in os.listdir(arch_dir) if f.endswith(".pkg.tar.zst")]
 
             # 创建一个字典来存储每个包的版本
-            packages = defaultdict(list)
+            packages = {}
             for package_file in all_files:
                 try:
                     (package_name, full_version, build_number, architecture) = (
                         parse_package_filename(package_file)
                     )
                     key = (package_name, full_version)
+                    if key not in packages:
+                        packages[key] = []
                     packages[key].append((full_version, build_number, package_file))
                 except ValueError as e:
                     log_file.write(f"Error processing file {package_file}: {e}\n")
@@ -109,7 +110,7 @@ def main():
                 versions_to_keep = [f[2] for f in files[:KEEP_VERSIONS]]  # 只保留文件名
 
                 # 删除多余的版本
-                for file_info in files[KEEP_VERSIONS:]:
+                for file_info in files[KEEP_VERSIONS:]:  # 使用 file_info 代替 file
                     file = file_info[2]  # 获取文件名
                     delete_path = os.path.join(arch_dir, file)
                     if DELETE:
