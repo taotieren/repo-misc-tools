@@ -31,25 +31,16 @@ def parse_version(version_str):
 
 # 从文件名中提取包信息
 def parse_package_filename(filename):
-    # 定义多种可能的正则表达式模式
-    patterns = [
-        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?)(?::([\d\.-]+))?)?-(\d+)-(.+?)\.pkg\.tar\.zst$",
-        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))(?::([\d\.-]+))?-([\d]+)-(.+?)\.pkg\.tar\.zst$",
-        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))(?::([\d\.-]+))?-(\d+)-(.+?)\.pkg\.tar\.zst$",
-        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))(?::([\d\.-]+))?-([\d]+)-(.+?)\.pkg\.tar\.zst$",
-        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))(?::([\d\.-]+))?-(\d+)-(.+?)\.pkg\.tar\.zst$",
-    ]
+    # 定义更通用的正则表达式模式
+    pattern = r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?)(?::([\d\.-]+))?)?-(\d+)-(.+?)\.pkg\.tar\.zst$"
 
-    for pattern in patterns:
-        match = re.match(pattern, filename)
-        if match:
-            package_name, version, extra_version, build_number, architecture = (
-                match.groups()
-            )
-            full_version = (
-                f"{version}{':' if extra_version else ''}{extra_version or ''}"
-            )
-            return (package_name, full_version, build_number, architecture)
+    match = re.match(pattern, filename)
+    if match:
+        package_name, version, extra_version, build_number, architecture = (
+            match.groups()
+        )
+        full_version = f"{version}{':' if extra_version else ''}{extra_version or ''}"
+        return (package_name, full_version, build_number, architecture)
 
     raise ValueError(f"Unable to parse version information from filename: {filename}")
 
@@ -65,40 +56,16 @@ def collect_package_names(repo_path):
                     try:
                         (package_name, _, _, _) = parse_package_filename(filename)
                         package_names.add(package_name)
-                    except ValueError:
-                        pass  # 如果无法解析，跳过
+                    except ValueError as e:
+                        with open(LOG_PATH, "a") as log_file:
+                            log_file.write(f"Error parsing {filename}: {e}\n")
     return package_names
-
-
-# 动态生成正则表达式
-def generate_regex_from_package_names(package_names):
-    # 基于包名生成通用正则表达式
-    common_prefixes = defaultdict(int)
-    for name in package_names:
-        for i in range(len(name)):
-            prefix = name[:i]
-            common_prefixes[prefix] += 1
-
-    # 找到最常见的前缀
-    most_common_prefix = max(common_prefixes, key=common_prefixes.get)
-    pattern = f"^{re.escape(most_common_prefix)}(.+?)-((?:(?:\\d+[\\._-])*(?:\\d+|alpha|beta|rc)[\\._-]*(?:r\\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\\.\\d+)?)?(?:-beta(?:\\.\\d+)?)?(?:-rc(?:\\.\\d+)?)?)(?::([\\d\\.-]+))?)?-(\\d+)-(.+?)\\.pkg\\.tar\\.zst$"
-    return pattern
 
 
 # 主逻辑
 def main():
     # 收集包名
     package_names = collect_package_names(REPO_PATH)
-
-    # 生成正则表达式
-    regex_pattern = generate_regex_from_package_names(package_names)
-    print(f"Generated regex pattern: {regex_pattern}")
-
-    # 添加生成的正则表达式到 patterns 列表
-    patterns = [
-        regex_pattern,
-        # 其他预定义的正则表达式
-    ]
 
     # 打开日志文件以追加模式写入
     with open(LOG_PATH, "a") as log_file:
