@@ -32,7 +32,7 @@ def parse_version(version_str):
 def extract_package_info(filename):
     # 更宽松的正则表达式来匹配包名和版本信息
     match = re.match(
-        r"^(.+?)-([\d\.-]+(?:-r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?)(?::([\d\.-]+))?-([\d]+)-(.+?)\.pkg\.tar\.zst$",
+        r"^(.+?)-((?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?)(?::([\d\.-]+))?)?-(\d+)-(.+?)\.pkg\.tar\.zst$",
         filename,
     )
     if not match:
