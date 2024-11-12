@@ -33,11 +33,11 @@ def parse_package_filename(filename):
     # 定义一个更通用的正则表达式模式
     pattern = re.compile(
         r"^(?P<package_name>.+?)-"
-        r"(?P<git_debug>(?:-git|-debug)*)?"
+        r"(?P<git_debug>(?:-git|-debug|-git-debug)*)?"
         r"(?:(?P<epoch>\d+):)?"
         r"(?P<version>"
-        r"(?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc|git|debug)[\._-]*)?"  # 基本版本号
-        r"(?:r\d+)?(?:-g[0-9a-f]+)?"  # r 和 g 标签
+        r"[a-zA-Z0-9._-]+"  # 版本号可以是字母和数字的任意组合
+        r"(?:-r\d+)?(?:-g[0-9a-f]+)?"  # r 和 g 标签
         r"|"
         r"\d{8}_[0-9a-f]+"  # 特殊日期格式版本号
         r")"
