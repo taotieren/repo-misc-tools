@@ -33,11 +33,13 @@ def parse_package_filename(filename):
     # 定义一个更通用的正则表达式模式
     pattern = re.compile(
         r"^(?P<package_name>.+?)-"
+        r"(?P<git_debug>(?:-git|-debug)*)?"
         r"(?:(?P<epoch>\d+):)?"
         r"(?P<version>"
         r"(?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc|git|debug)[\._-]*)?"  # 基本版本号
         r"(?:r\d+)?(?:-g[0-9a-f]+)?"  # r 和 g 标签
-        r"(?:-git|-debug)?"  # git 和 debug 标签
+        r"|"
+        r"\d{8}_[0-9a-f]+"  # 特殊日期格式版本号
         r")"
         r"-(?P<build_number>\d+)"
         r"-(?P<architecture>.+?)\.pkg\.tar\.zst$"
@@ -46,11 +48,14 @@ def parse_package_filename(filename):
     match = pattern.match(filename)
     if match:
         package_name = match.group("package_name")
+        git_debug = match.group("git_debug") or ""
         epoch = match.group("epoch") or ""  # epoch 可以为空
         version = match.group("version")
         build_number = match.group("build_number")
         architecture = match.group("architecture")
-        full_version = f"{epoch}:{version}" if epoch else version
+        full_version = (
+            f"{git_debug}{epoch}:{version}" if epoch else f"{git_debug}{version}"
+        )
         return (package_name, full_version, build_number, architecture)
     else:
         raise ValueError(
