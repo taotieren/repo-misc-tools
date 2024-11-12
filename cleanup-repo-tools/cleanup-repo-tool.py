@@ -33,7 +33,7 @@ def parse_package_filename(filename):
     # 定义一个更通用的正则表达式模式
     pattern = re.compile(
         r"^(?P<package_name>.+?)-"
-        r"(?P<version>(?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))"
+        r"(?P<version>(?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc|git|debug)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))"
         r"(?::(?P<extra_version>[\d\.-]+))?"
         r"-(?P<build_number>\d+)"
         r"-(?P<architecture>.+?)\.pkg\.tar\.zst$"
