@@ -32,7 +32,7 @@ def parse_version(version_str):
 def parse_package_filename(filename):
     # 定义一个更通用的正则表达式模式
     pattern = re.compile(
-        r"^(?P<package_name>[^-]+(?:-[^-]+)*)"  # package_name 可以包含多个 -，-git 合并到包名中
+        r"^(?P<package_name>[^-]+(?:-[^-]+)*)"  # package_name 可以包含多个 -，包括连续的 -，-git 合并到包名中
         r"(?P<debug>-debug)?"  # 可选的 -debug
         r"(?P<epoch>:\d+)?-"  # 可选的 epoch
         r"(?P<version>[^.-]+(?:\.[^.-]+)*)(?:-r\d+|-g[0-9a-f]+)?"  # version 可以是任意字符组合，忽略修订版本
