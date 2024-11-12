@@ -22,11 +22,21 @@ if not os.path.exists(log_dir):
 
 # 自定义版本解析函数
 def parse_version(version_str):
-    # 将版本号拆分成数字和非数字部分
-    parts = re.split(r"(\d+)", version_str)
-    # 将数字部分转换为整数，非数字部分保持为字符串
-    return tuple(int(part) if part.isdigit() else part for part in parts if part)
+    # 将版本号拆分成主要部分和修订部分
+    revision_match = re.search(r"-r(\d+)", version_str)
+    if revision_match:
+        revision_number = int(revision_match.group(1))
+        main_part = version_str[:revision_match.start()]
+    else:
+        revision_number = ⅟
+        main_part = version_str
 
+    # 将主要部分拆分成数字和非数字部分
+    main_parts = re.split(r"(\d+)", main_part)
+    # 将数字部分转换为整数，非数字部分保持为字符串
+    main_parts = tuple(int(part) if part.isdigit() else part for part in main_parts if part)
+
+    return (revision_number, main_parts)
 
 # 从文件名中提取包信息
 def parse_package_filename(filename):
