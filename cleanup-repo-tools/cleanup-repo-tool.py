@@ -32,7 +32,7 @@ def parse_version(version_str):
 def parse_package_filename(filename):
     # 定义一个更通用的正则表达式模式
     pattern = re.compile(
-        r"^(?P<package_name>.+?)(?:-git)?"
+        r"^(?P<package_name>)?"
         r"(?:(?P<debug>-debug))?"
         r"(?:(?P<epoch>\d+):)?"
         r"(?P<version>"
