@@ -34,7 +34,11 @@ def parse_package_filename(filename):
     pattern = re.compile(
         r"^(?P<package_name>.+?)-"
         r"(?:(?P<epoch>\d+):)?"
-        r"(?P<version>(?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc|git|debug)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))"
+        r"(?P<version>"
+        r"(?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc|git|debug)[\._-]*)?"  # 基本版本号
+        r"(?:r\d+)?(?:-g[0-9a-f]+)?"  # r 和 g 标签
+        r"(?:-git|-debug)?"  # git 和 debug 标签
+        r")"
         r"-(?P<build_number>\d+)"
         r"-(?P<architecture>.+?)\.pkg\.tar\.zst$"
     )
