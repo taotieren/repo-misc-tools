@@ -34,7 +34,12 @@ def parse_version(version_str):
     # 将主要部分拆分成数字和非数字部分
     parts = re.split(r"(\d+)", main_part)
     # 将数字部分转换为整数，非数字部分保持为字符串
-    parts = tuple(int(part) if part.isdigit() else 0 for part in parts if part)
+    parts = tuple(int(part) if part.isdigit() else part for part in parts if part)
+
+    # 确保每个元素都是整数，如果不是整数，则将其转换为整数
+    parts = tuple(
+        int(part) if isinstance(part, str) and part.isdigit() else 0 for part in parts
+    )
 
     return (revision_number,) + parts
 
