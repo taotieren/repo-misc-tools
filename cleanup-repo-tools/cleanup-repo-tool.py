@@ -45,7 +45,7 @@ def parse_version(version_str):
 def parse_package_filename(filename):
     # 定义一个更通用的正则表达式模式
     pattern = re.compile(
-        r"^(?P<package_name>.+?)"  # 包名可以包含任意字符，直到遇到第一个版本号前的部分
+        r"^(?P<package_name>[^-]+(?:-[^-]+)*)"  # 包名可以包含任意字符，直到遇到第一个版本号前的部分
         r"(?P<debug>-debug)?"  # 可选的 -debug
         r"(?P<epoch>:\d+)?-"  # 可选的 epoch
         r"(?P<version>[^.-]+(?:\.[^.-]+)*)(?:-r\d+|-g[0-9a-f]+)?"  # version 可以是任意字符组合，忽略修订版本
