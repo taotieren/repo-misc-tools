@@ -32,7 +32,7 @@ def parse_version(version_str):
 def parse_package_filename(filename):
     # 定义一个更通用的正则表达式模式
     pattern = re.compile(
-        r"^(?P<package_name>[^-]+(?:-[^-]+)*)"  # package_name 可以包含多个 -，包括连续的 -，-git 合并到包名中
+        r"^(?P<package_name>[^-]+(?:-[^-]+)*)"  # package_name 可以包含多个 -，包括连续的 -
         r"(?P<debug>-debug)?"  # 可选的 -debug
         r"(?P<epoch>:\d+)?-"  # 可选的 epoch
         r"(?P<version>[^.-]+(?:\.[^.-]+)*)(?:-r\d+|-g[0-9a-f]+)?"  # version 可以是任意字符组合，忽略修订版本
@@ -51,9 +51,30 @@ def parse_package_filename(filename):
         full_version = f"{debug}{epoch}{version}" if epoch else f"{debug}{version}"
         return (package_name, full_version, build_number, architecture)
     else:
-        raise ValueError(
-            f"Unable to parse version information from filename: {filename}"
+        # 如果上述正则表达式未匹配成功，尝试更宽松的匹配
+        loose_pattern = re.compile(
+            r"^(?P<package_name>.+?)"  # 包名可以包含任意字符，直到遇到第一个版本号前的部分
+            r"(?P<debug>-debug)?"  # 可选的 -debug
+            r"(?P<epoch>:\d+)?-"  # 可选的 epoch
+            r"(?P<version>[^.-]+(?:\.[^.-]+)*)(?:-r\d+|-g[0-9a-f]+)?"  # version 可以是任意字符组合，忽略修订版本
+            r"-(?P<build_number>\d+)"  # build_number
+            r"-(?P<architecture>.+?)\.pkg\.tar\.zst$"  # architecture
         )
+
+        loose_match = loose_pattern.match(filename)
+        if loose_match:
+            package_name = loose_match.group("package_name")
+            debug = loose_match.group("debug") or ""
+            epoch = loose_match.group("epoch") or ""
+            version = loose_match.group("version")
+            build_number = loose_match.group("build_number")
+            architecture = loose_match.group("architecture")
+            full_version = f"{debug}{epoch}{version}" if epoch else f"{debug}{version}"
+            return (package_name, full_version, build_number, architecture)
+        else:
+            raise ValueError(
+                f"Unable to parse version information from filename: {filename}"
+            )
 
 
 # 主逻辑
