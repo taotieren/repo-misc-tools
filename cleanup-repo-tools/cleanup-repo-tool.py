@@ -32,12 +32,11 @@ def parse_version(version_str):
 def parse_package_filename(filename):
     # 定义一个更通用的正则表达式模式
     pattern = re.compile(
-        r"^(?P<package_name>.+?)"  # package_name 可以包含多个 -
+        r"^(?P<package_name>[^-]+(?:-[^-]+)*)"  # package_name 可以包含多个 -
         r"(?P<debug>-debug)?"  # 可选的 -debug
         r"(?P<epoch>:\d+)?-"  # 可选的 epoch
-        r"(?P<version>[^.-]+)"  # version 可以是任意字符组合，直到下一个 - 或 .
-        r"(?P<revision>-\d+)?-"  # 可选的 revision
-        r"(?P<build_number>\d+)"  # build_number
+        r"(?P<version>[^.-]+(?:\.[^.-]+)*)(?:-r\d+|-g[0-9a-f]+)?"  # version 可以是任意字符组合，忽略修订版本
+        r"-(?P<build_number>\d+)"  # build_number
         r"-(?P<architecture>.+?)\.pkg\.tar\.zst$"  # architecture
     )
 
@@ -47,14 +46,9 @@ def parse_package_filename(filename):
         debug = match.group("debug") or ""
         epoch = match.group("epoch") or ""
         version = match.group("version")
-        revision = match.group("revision") or ""
         build_number = match.group("build_number")
         architecture = match.group("architecture")
-        full_version = (
-            f"{debug}{epoch}{version}{revision}"
-            if epoch
-            else f"{debug}{version}{revision}"
-        )
+        full_version = f"{debug}{epoch}{version}" if epoch else f"{debug}{version}"
         return (package_name, full_version, build_number, architecture)
     else:
         raise ValueError(
