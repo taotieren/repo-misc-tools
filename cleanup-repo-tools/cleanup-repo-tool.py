@@ -33,8 +33,8 @@ def parse_package_filename(filename):
     # 定义一个更通用的正则表达式模式
     pattern = re.compile(
         r"^(?P<package_name>.+?)-"
+        r"(?:(?P<epoch>\d+):)?"
         r"(?P<version>(?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc|git|debug)[\._-]*(?:r\d+)?(?:-g[0-9a-f]+)?(?:-git)?(?:-debug)?(?:-alpha(?:\.\d+)?)?(?:-beta(?:\.\d+)?)?(?:-rc(?:\.\d+)?)?))"
-        r"(?::(?P<extra_version>[\d\.-]+))?"
         r"-(?P<build_number>\d+)"
         r"-(?P<architecture>.+?)\.pkg\.tar\.zst$"
     )
@@ -42,11 +42,11 @@ def parse_package_filename(filename):
     match = pattern.match(filename)
     if match:
         package_name = match.group("package_name")
+        epoch = match.group("epoch") or ""  # epoch 可以为空
         version = match.group("version")
-        extra_version = match.group("extra_version") or ""
         build_number = match.group("build_number")
         architecture = match.group("architecture")
-        full_version = f"{version}:{extra_version}" if extra_version else version
+        full_version = f"{epoch}:{version}" if epoch else version
         return (package_name, full_version, build_number, architecture)
     else:
         raise ValueError(
