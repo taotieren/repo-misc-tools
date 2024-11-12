@@ -32,29 +32,30 @@ def parse_version(version_str):
 def parse_package_filename(filename):
     # 定义一个更通用的正则表达式模式
     pattern = re.compile(
-        r"^(?P<package_name>)?"
-        r"(?:(?P<debug>-debug))?"
-        r"(?:(?P<epoch>\d+):)?"
-        r"(?P<version>"
-        r"(?:(?:\d+[\._-])*(?:\d+|alpha|beta|rc|post)[\._-]*)?"  # 基本版本号
-        r"(?:r\d+)?(?:-g[0-9a-f]+)?"  # r 和 g 标签
-        r"|"
-        r"\d{8}_[0-9a-f]+"  # 特殊日期格式版本号
-        r")"
-        r"-(?P<build_number>\d+)"
-        r"-(?P<architecture>.+?)\.pkg\.tar\.zst$"
+        r"^(?P<package_name>.+?)"  # package_name 可以包含多个 -
+        r"(?P<debug>-debug)?"  # 可选的 -debug
+        r"(?P<epoch>:\d+)?-"  # 可选的 epoch
+        r"(?P<version>[^.-]+)"  # version 可以是任意字符组合，直到下一个 - 或 .
+        r"(?P<revision>-\d+)?-"  # 可选的 revision
+        r"(?P<build_number>\d+)"  # build_number
+        r"-(?P<architecture>.+?)\.pkg\.tar\.zst$"  # architecture
     )
 
     match = pattern.match(filename)
     if match:
         package_name = match.group("package_name")
         debug = match.group("debug") or ""
-        epoch = match.group("epoch") or ""  # epoch 可以为空
+        epoch = match.group("epoch") or ""
         version = match.group("version")
+        revision = match.group("revision") or ""
         build_number = match.group("build_number")
         architecture = match.group("architecture")
-        full_version = f"{epoch}:{version}" if epoch else version
-        return (package_name, full_version, build_number, architecture, debug)
+        full_version = (
+            f"{debug}{epoch}{version}{revision}"
+            if epoch
+            else f"{debug}{version}{revision}"
+        )
+        return (package_name, full_version, build_number, architecture)
     else:
         raise ValueError(
             f"Unable to parse version information from filename: {filename}"
@@ -82,16 +83,16 @@ def main():
             packages = defaultdict(list)
             for package_file in all_files:
                 try:
-                    (package_name, full_version, build_number, architecture, debug) = (
+                    (package_name, full_version, build_number, architecture) = (
                         parse_package_filename(package_file)
                     )
-                    key = (package_name, full_version, debug)
+                    key = (package_name, full_version)
                     packages[key].append((full_version, build_number, package_file))
                 except ValueError as e:
                     log_file.write(f"Error processing file {package_file}: {e}\n")
 
             # 对每个包的版本进行排序并决定哪些版本需要保留
-            for (package_name, version, debug), files in packages.items():
+            for (package_name, version), files in packages.items():
                 if len(files) < KEEP_VERSIONS:
                     log_file.write(
                         f"Less than {KEEP_VERSIONS} versions of {package_name} found. Skipping.\n"
