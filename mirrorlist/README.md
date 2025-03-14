@@ -22,7 +22,7 @@ Server = https://aur-repo.taotieren.com/aur-repo/$arch
 ```
 
 ```bash
-yay -Ss aur-repo-mirrorlist-git
+pacman -Syu aur-repo-mirrorlist-git
 ```
 
 ```ini
