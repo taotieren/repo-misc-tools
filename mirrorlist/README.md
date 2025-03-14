@@ -36,7 +36,7 @@ Include = /etc/pacman.d/aur-repo-mirrorlist
 cp -v aur-repo.urls /etc/debuginfod/
 ```
 
-## Rysnc
+## Rsync
 
 ```bash
 ## Only IPv6
