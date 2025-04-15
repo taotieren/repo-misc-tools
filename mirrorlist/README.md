@@ -47,11 +47,11 @@ cp -v aur-repo.urls /etc/debuginfod/
 ```bash
 ## Only IPv6
 ## Status: OK
-rsync rsync://aur-repo.taotieren.com
-rsync -avzP --bwlimit=30720 --timeout=120 --contimeout=120  --exclude-from=/opt/rsync/exclude.list rsync://aur-repo.taotieren.com/aur-repo /opt/sync/aur-repo
+rsync rsync://aur-repo6.taotieren.com
+rsync -avzP --bwlimit=30720 --timeout=120 --contimeout=120  --exclude-from=/opt/rsync/exclude.list rsync://aur-repo6.taotieren.com/aur-repo /opt/sync/aur-repo
 
 ## Only IPv4
 ## Status: NO
-# rsync rsync://aur-repo.taotieren.com
-# rsync -avzP --bwlimit=30720 --timeout=120 --contimeout=120  --exclude-from=/opt/rsync/exclude.list rsync://aur-repo.taotieren.com/aur-repo /opt/sync/aur-repo
+# rsync rsync://aur-repo6.taotieren.com
+# rsync -avzP --bwlimit=30720 --timeout=120 --contimeout=120  --exclude-from=/opt/rsync/exclude.list rsync://aur-repo6.taotieren.com/aur-repo /opt/sync/aur-repo
 ```
