@@ -27,6 +27,12 @@ Server = https://mirrors.kicad.online/aur-repo/$arch
 Server = https://aur-repo.taotieren.com/aur-repo/$arch
 ```
 
+```ini
+[aur-repo]
+## China Mobile Network (50Mbps) (ipv6, http, https)
+Server = https://aur-repo6.taotieren.com/aur-repo/$arch
+```
+
 ```bash
 pacman -Syu aur-repo-mirrorlist-git
 ```
@@ -51,7 +57,7 @@ rsync rsync://aur-repo6.taotieren.com
 rsync -avzP --bwlimit=30720 --timeout=120 --contimeout=120  --exclude-from=/opt/rsync/exclude.list rsync://aur-repo6.taotieren.com/aur-repo /opt/sync/aur-repo
 
 ## Only IPv4
-## Status: NO
+## Status: FAILED
 # rsync rsync://aur-repo6.taotieren.com
 # rsync -avzP --bwlimit=30720 --timeout=120 --contimeout=120  --exclude-from=/opt/rsync/exclude.list rsync://aur-repo6.taotieren.com/aur-repo /opt/sync/aur-repo
 ```
