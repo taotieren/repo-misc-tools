@@ -17,7 +17,13 @@ Server = https://fun.ie8.pub:2443/aur-repo/$arch
 
 ```ini
 [aur-repo]
-## China Mobile Network (50Mbps) (ipv6, http, https)
+## CloudFlare Preferred CDN (ipv4, ipv6, http, https)
+Server = https://mirrors.kicad.online/aur-repo/$arch
+```
+
+```ini
+[aur-repo]
+## CloudFlare Free CDN (ipv4, ipv6, http, https)
 Server = https://aur-repo.taotieren.com/aur-repo/$arch
 ```
 
