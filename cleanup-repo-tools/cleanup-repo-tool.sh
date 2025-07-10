@@ -130,7 +130,7 @@ update_repo_database() {
     for arch_dir in "$REPO_PATH"/*; do
         [[ -d "$arch_dir" ]] || continue
         local arch_name=$(basename "$arch_dir")
-        local db_file="$REPO_PATH/db/$arch_name/packages.db.tar.gz"
+        local db_file="$REPO_PATH/$arch_name/aur-repo.db.tar.gz"
         
         # 确保数据库目录存在
         mkdir -p "$(dirname "$db_file")"
