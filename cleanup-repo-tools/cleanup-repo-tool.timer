@@ -2,7 +2,8 @@
 Description=Run Local Repository Cleanup Daily
 
 [Timer]
-OnCalendar=daily
+#OnCalendar=daily
+OnCalendar=weekly
 Persistent=true
 
 [Install]
