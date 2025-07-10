@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=python /usr/bin/cleanup-repo-tool -d
+ExecStart=/usr/bin/cleanup-repo-tool -d
 User=root
 Group=root
 StandardOutput=append:/var/log/cleanup-repo-tool/cleanup.log
