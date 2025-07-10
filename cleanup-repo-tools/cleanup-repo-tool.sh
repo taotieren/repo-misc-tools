@@ -77,42 +77,36 @@ clean_architecture_dir() {
     local arch_dir="$1"
     log "处理架构目录: $(basename "$arch_dir")"
     
-    declare -A packages  # 存储包名与文件列表的映射
-    
-    # 收集所有包文件并按包名分组
+    declare -A packages
     while IFS= read -r pkg_file; do
         pkg_name=$(extract_pkgname "$pkg_file")
         packages["$pkg_name"]+="$pkg_file|"
     done < <(find "$arch_dir" -maxdepth 1 -type f -name "*.pkg.tar.zst" ! -name "*.sig")
     
-    # 处理每个包
     for pkg_name in "${!packages[@]}"; do
         IFS='|' read -ra versions <<< "${packages[$pkg_name]%|}"
         local count=${#versions[@]}
         
-        # 检查是否需要清理
         if (( count <= MAX_KEEP )); then
-            log "跳过 $pkg_name - 只有 $count 个版本 (需$((MAX_KEEP+1))个以上才清理)"
+            log "跳过 $pkg_name - 只有 $count 个版本 (需保留 $MAX_KEEP)"
             continue
         fi
         
-        # 按修改时间排序（最新在前）
-        sorted_versions=($(ls -t "${versions[@]}"))
+        # 按修改时间倒序排序（最新在前）
+        sorted_versions=($(printf '%s\n' "${versions[@]}" | \
+             xargs -I{} stat -c "%Y %n" {} | \
+             sort -nr | cut -d' ' -f2))
         
-        # 计算需删除的旧版本
         local delete_count=$((count - MAX_KEEP))
-        local delete_list=("${sorted_versions[@]: -delete_count}")
+        local delete_list=("${sorted_versions[@]:MAX_KEEP}")  # 保留前MAX_KEEP个，删除后续
         
-        # 执行删除操作
         for file in "${delete_list[@]}"; do
-            if [[ "$DRY_RUN" == true ]]; then
+            if $DRY_RUN; then
                 log "[DRY-RUN] 将删除: $(basename "$file")"
             else
                 log "删除旧版本: $(basename "$file")"
                 rm -f "$file"
-                # 同步删除签名文件
-                local sig_file="${file}.sig"
-                [[ -f "$sig_file" ]] && rm -f "$sig_file"
+                [[ -f "${file}.sig" ]] && rm -f "${file}.sig"
             fi
         done
     done
