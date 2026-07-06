@@ -19,6 +19,7 @@
 
 ## China Unicom Network (100Mbps) (ipv4, ipv6, http, https)
 # Server = https://atz-mirror.teamos.vip:60000/aur-repo/$arch
+
 ## China Mobile Network (50Mbps) (ipv6, http, https)
 # Server = https://aur-repo6.taotieren.com/aur-repo/$arch
 
